@@ -27,7 +27,7 @@ def myserver(xprocess):
 
     class Starter(ProcessStarter):
         pattern = 'Running on'
-        args = ['python3', path]
+        args = [path]
 
     xprocess.ensure("myserver", Starter)
 
