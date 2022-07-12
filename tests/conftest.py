@@ -31,6 +31,6 @@ def myserver(xprocess):
 
     xprocess.ensure("myserver", Starter)
 
-    yield Server('http://localhost:8000/')
+    yield Server('http://127.0.0.1:8080/')
 
     xprocess.getinfo("myserver").terminate()
