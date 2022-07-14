@@ -1,6 +1,7 @@
 import os
 import pytest
 import requests
+import time
 
 from xprocess import ProcessStarter
 from dataclasses import dataclass
@@ -28,6 +29,8 @@ def myserver(xprocess):
     class Starter(ProcessStarter):
         pattern = ''
         args = [path]
+
+    time.sleep(5)
 
     xprocess.ensure("myserver", Starter)
 
