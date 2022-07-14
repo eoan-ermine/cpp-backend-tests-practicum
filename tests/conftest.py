@@ -30,7 +30,7 @@ def myserver(xprocess):
         pattern = ''
         args = [path]
 
-    time.sleep(5)
+    time.sleep(15)
 
     xprocess.ensure("myserver", Starter)
 
