@@ -1,7 +1,6 @@
 import os
 import pytest
 import requests
-import time
 
 from xprocess import ProcessStarter
 from dataclasses import dataclass
@@ -30,14 +29,7 @@ def myserver(xprocess):
         pattern = ''
         args = [path]
 
-    time.sleep(15)
-
     xprocess.ensure("myserver", Starter)
-
-    time.sleep(15)
-
     yield Server('http://127.0.0.1:8080/')
-
-    time.sleep(15)
 
     xprocess.getinfo("myserver").terminate()
