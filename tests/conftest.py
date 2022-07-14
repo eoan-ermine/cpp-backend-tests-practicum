@@ -26,7 +26,7 @@ def myserver(xprocess):
         raise Exception(f"no such file {os.environ['DELIVERY_APP']}")
 
     class Starter(ProcessStarter):
-        pattern = ''
+        pattern = 'Server started...'
         args = [path]
 
     xprocess.ensure("myserver", Starter)
