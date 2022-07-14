@@ -34,6 +34,10 @@ def myserver(xprocess):
 
     xprocess.ensure("myserver", Starter)
 
+    time.sleep(15)
+
     yield Server('http://127.0.0.1:8080/')
+
+    time.sleep(15)
 
     xprocess.getinfo("myserver").terminate()
