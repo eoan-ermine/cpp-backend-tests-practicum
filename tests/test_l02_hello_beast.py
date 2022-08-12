@@ -9,7 +9,7 @@ def test_hello(myserver):
 def test_hello_error(myserver):
     name = 'Baron'
     res = myserver.post(f'/{name}', f'some')
-    assert res.status_code == 400
+    assert res.status_code == 405
     assert res.text == f'Invalid method'
     assert res.headers['content-type'] == 'text/html'
     assert res.headers['content-length'] == 14
