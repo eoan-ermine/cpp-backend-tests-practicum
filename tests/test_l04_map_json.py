@@ -1,26 +1,15 @@
-
-
-def test_ping(myserver):
-    res = myserver.get('/ping')
-    assert res.status_code == 200
-    assert res.text == 'pong'
-
-
-def test_pong(myserver):
-    res = myserver.get('/pong')
-    assert res.status_code == 200
-    assert res.text == 'ping'
-
-
 def test_hello(myserver):
-    name = 'John'
-    res = myserver.get(f'/hello/{name}')
+    name = 'Baron'
+    res = myserver.get(f'/{name}')
     assert res.status_code == 200
-    assert res.text == f'Hello {name}!'
+    assert res.text == f'Hello, {name}'
+    assert res.headers['content-type'] == 'text/html'
+    assert res.headers['content-length'] == '12'
 
-
-def test_goodbye(myserver):
-    name = 'John'
-    res = myserver.get(f'/goodbye/{name}')
-    assert res.status_code == 200
-    assert res.text == f'Goodbye {name}!'
+def test_hello_error(myserver):
+    name = 'Baron'
+    res = myserver.post(f'/{name}', f'some')
+    assert res.status_code == 405
+    assert res.text == f'Invalid method'
+    assert res.headers['content-type'] == 'text/html'
+    assert res.headers['content-length'] == '14'
