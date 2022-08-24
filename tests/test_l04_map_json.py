@@ -1,17 +1,14 @@
 import json
 
-ans_list = """
-[
+ans_list = [
   {
     "id": "map1",
     "name": "Map 1"
   }
 ]
-"""
-ans_list = json.dumps(ans_list, sort_keys=True, indent=2)
+# ans_list = json.dumps(ans_list, sort_keys=True, indent=2)
 
-ans_info = """
-{
+ans_info = {
   "id": "map1",
   "name": "Map 1",
   "roads": [
@@ -54,53 +51,48 @@ ans_info = """
     }
   ]
 }
-"""
-ans_info = json.dumps(ans_info, sort_keys=True, indent=2)
+# ans_info = json.dumps(ans_info, sort_keys=True, indent=2)
 
-map_not_found = """
-{
+map_not_found = {
   "code": "mapNotFound",
   "message": "Map not found"
 }
-"""
-map_not_found = json.dumps(map_not_found, sort_keys=True, indent=2)
+# map_not_found = json.dumps(map_not_found, sort_keys=True, indent=2)
 
-bad_request = """
-{
+bad_request = {
   "code": "badRequest",
   "message": "Bad request"
 }
-"""
-bad_request = json.dumps(bad_request, sort_keys=True, indent=2)
+# bad_request = json.dumps(bad_request, sort_keys=True, indent=2)
 
 def test_list(myserver):
     request = 'api/v1/maps'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
-    assert result == ans_list
+    # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
+    assert res.json() == ans_list
 
 def test_info(myserver):
     request = 'api/v1/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
-    assert result == ans_info
+    # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
+    assert res.json() == ans_info
 
 def test_map_not_found(myserver):
     request = 'api/v1/maps/map33'
     res = myserver.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
-    assert result == map_not_found
+    # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
+    assert res.json() == map_not_found
 
 def test_bad_request(myserver):
     request = 'api/v333/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
-    assert result == bad_request
+    # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
+    assert res.json() == bad_request
