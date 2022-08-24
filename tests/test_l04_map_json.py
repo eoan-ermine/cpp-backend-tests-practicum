@@ -8,7 +8,7 @@ ans_list = """
   }
 ]
 """
-ans_list = json.dumps(ans_list, sort_keys=True)
+ans_list = json.dumps(ans_list, sort_keys=True, indent=2)
 
 ans_info = """
 {
@@ -55,7 +55,7 @@ ans_info = """
   ]
 }
 """
-ans_info = json.dumps(ans_info, sort_keys=True)
+ans_info = json.dumps(ans_info, sort_keys=True, indent=2)
 
 map_not_found = """
 {
@@ -63,7 +63,7 @@ map_not_found = """
   "message": "Map not found"
 }
 """
-map_not_found = json.dumps(map_not_found, sort_keys=True)
+map_not_found = json.dumps(map_not_found, sort_keys=True, indent=2)
 
 bad_request = """
 {
@@ -71,32 +71,36 @@ bad_request = """
   "message": "Bad request"
 }
 """
-bad_request = json.dumps(bad_request, sort_keys=True)
+bad_request = json.dumps(bad_request, sort_keys=True, indent=2)
 
 def test_list(myserver):
     request = 'api/v1/maps'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
-    assert res.json() == ans_list
+    result = json.dumps(json.loads(res.json()), sort_keys=True, indent=2)
+    assert result == ans_list
 
 def test_info(myserver):
     request = 'api/v1/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
-    assert res.json() == ans_info
+    result = json.dumps(json.loads(res.json()), sort_keys=True, indent=2)
+    assert result == ans_list
 
 def test_map_not_found(myserver):
     request = 'api/v1/maps/map33'
     res = myserver.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
-    assert res.json() == map_not_found
+    result = json.dumps(json.loads(res.json()), sort_keys=True, indent=2)
+    assert result == ans_list
 
 def test_bad_request(myserver):
     request = 'api/v333/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
-    assert res.json() == bad_request
+    result = json.dumps(json.loads(res.json()), sort_keys=True, indent=2)
+    assert result == ans_list
