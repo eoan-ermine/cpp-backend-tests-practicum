@@ -24,10 +24,11 @@ def myserver(xprocess):
     path = os.environ['DELIVERY_APP']
     if not Path(path).exists():
         raise Exception(f"no such file {os.environ['DELIVERY_APP']}")
+    config_path = os.environ.get('CONFIG_PATH')
 
     class Starter(ProcessStarter):
         pattern = 'Server has started...'
-        args = [path]
+        args = [path, config_path]
 
     xprocess.ensure("myserver", Starter)
     yield Server('http://127.0.0.1:8080/')
