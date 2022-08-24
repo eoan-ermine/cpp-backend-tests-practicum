@@ -78,23 +78,23 @@ def test_list(myserver):
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(str(res.json())), sort_keys=True, indent=2)
-    assert result == ans_list
+    result = json.dump(res.json(), sort_keys=True, indent=2)
+    assert result == ans_info
 
 def test_info(myserver):
     request = 'api/v1/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(str(res.json())), sort_keys=True, indent=2)
-    assert result == ans_list
+    result = json.dump(res.json(), sort_keys=True, indent=2)
+    assert result == map_not_found
 
 def test_map_not_found(myserver):
     request = 'api/v1/maps/map33'
     res = myserver.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(str(res.json())), sort_keys=True, indent=2)
+    result = json.dump(res.json(), sort_keys=True, indent=2)
     assert result == ans_list
 
 def test_bad_request(myserver):
@@ -102,5 +102,5 @@ def test_bad_request(myserver):
     res = myserver.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
-    result = json.dumps(json.loads(str(res.json())), sort_keys=True, indent=2)
-    assert result == ans_list
+    result = json.dump(res.json(), sort_keys=True, indent=2)
+    assert result == bad_request
