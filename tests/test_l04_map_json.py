@@ -79,7 +79,7 @@ def test_list(myserver):
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
-    assert result == ans_info
+    assert result == ans_list
 
 def test_info(myserver):
     request = 'api/v1/maps/map1'
@@ -87,7 +87,7 @@ def test_info(myserver):
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
-    assert result == map_not_found
+    assert result == ans_info
 
 def test_map_not_found(myserver):
     request = 'api/v1/maps/map33'
@@ -95,12 +95,12 @@ def test_map_not_found(myserver):
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
     result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
-    assert result == ans_list
+    assert result == map_not_found
 
 def test_bad_request(myserver):
     request = 'api/v333/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
-    rresult = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
+    result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
     assert result == bad_request
