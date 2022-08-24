@@ -1,15 +1,16 @@
 import json
 
-ans_list = 
+ans_list = """
 [
   {
     "id": "map1",
     "name": "Map 1"
   }
 ]
+"""
 ans_list = json.dumps(ans_list, sort_keys=True, indent=2)
 
-ans_info = 
+ans_info = """
 {
   "id": "map1",
   "name": "Map 1",
@@ -53,20 +54,23 @@ ans_info =
     }
   ]
 }
+"""
 ans_info = json.dumps(ans_info, sort_keys=True, indent=2)
 
-map_not_found = 
+map_not_found = """
 {
   "code": "mapNotFound",
   "message": "Map not found"
 }
+"""
 map_not_found = json.dumps(map_not_found, sort_keys=True, indent=2)
 
-bad_request = 
+bad_request = """
 {
   "code": "badRequest",
   "message": "Bad request"
 }
+"""
 bad_request = json.dumps(bad_request, sort_keys=True, indent=2)
 
 def test_list(myserver):
