@@ -4,4 +4,4 @@ source ${REPO}/.venv/bin/activate
 
 export DELIVERY_APP=${REPO}/sprint1/problems/sync_server/solution/build/bin/hello
 
-python3.9 -m pytest --rootdir=${REPO} --verbose --junitxml=results.xml cpp-backend-tests-practicum/tests/test_l02_hello_beast.py
+python3 -m pytest --rootdir=${REPO} --verbose --junitxml=results.xml cpp-backend-tests-practicum/tests/test_l02_hello_beast.py
