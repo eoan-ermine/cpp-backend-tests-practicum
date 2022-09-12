@@ -25,7 +25,7 @@ def myserver(xprocess):
     if not Path(path).exists():
         raise Exception(f"no such file {os.environ['DELIVERY_APP']}")
     config_path = os.environ.get('CONFIG_PATH')
-    config_path = os.environ.get('DATA_PATH')
+    data_path = os.environ.get('DATA_PATH')
 
     class Starter(ProcessStarter):
         pattern = 'Server has started...'
