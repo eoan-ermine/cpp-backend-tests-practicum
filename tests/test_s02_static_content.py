@@ -88,3 +88,21 @@ def test_bad_request(myserver):
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == bad_request
+
+def test_image(myserver):
+    request = '/images/cube.svg HTTP/1.1'
+    res = myserver.get(f'/{request}')
+    assert res.status_code == 200
+    assert res.headers['content-type'] == 'image/svg+xml'
+
+def test_file_not_found(myserver):
+    request = '/images/ccccube.svg HTTP/1.1'
+    res = myserver.get(f'/{request}')
+    assert res.status_code == 404
+    assert res.headers['content-type'] == 'text/plain'
+
+def test_file_not_found(myserver):
+    request = '/files/no_file HTTP/1.1'
+    res = myserver.get(f'/{request}')
+    assert res.status_code == 400
+    assert res.headers['content-type'] == 'text/plain'
