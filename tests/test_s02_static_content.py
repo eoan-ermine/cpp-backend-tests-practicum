@@ -101,8 +101,13 @@ def test_file_not_found(myserver):
     assert res.status_code == 404
     assert res.headers['content-type'] == 'text/plain'
 
-def test_file_bad_request(myserver):
-    request = '%'
-    res = myserver.get(f'{request}')
-    assert res.status_code == 400
-    assert res.headers['content-type'] == 'text/plain'
+def test_index_html(myserver):
+    request = 'index.html'
+    res = myserver.get(f'/{request}')
+    assert res.status_code == 200
+    assert res.headers['content-type'] == 'text/html'
+    request2 = ''
+    res2 = myserver.get(f'/{request2}')
+    assert res2.status_code == 200
+    assert res2.headers['content-type'] == 'text/html'
+    assert res2.text == res.text
