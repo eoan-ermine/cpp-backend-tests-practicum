@@ -90,19 +90,19 @@ def test_bad_request(myserver):
     assert res.json() == bad_request
 
 def test_image(myserver):
-    request = '/images/cube.svg'
+    request = 'images/cube.svg'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'image/svg+xml'
 
 def test_file_not_found(myserver):
-    request = '/images/ccccube.svg'
+    request = 'images/ccccube.svg'
     res = myserver.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'text/plain'
 
 def test_file_bad_request(myserver):
-    request = '/files/no_file'
+    request = 'files/no_file'
     res = myserver.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'text/plain'
