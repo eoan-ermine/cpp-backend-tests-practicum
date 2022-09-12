@@ -101,7 +101,7 @@ def test_file_not_found(myserver):
     assert res.status_code == 404
     assert res.headers['content-type'] == 'text/plain'
 
-def test_file_not_found(myserver):
+def test_file_bad_request(myserver):
     request = '/files/no_file HTTP/1.1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 400
