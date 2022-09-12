@@ -102,7 +102,7 @@ def test_file_not_found(myserver):
     assert res.headers['content-type'] == 'text/plain'
 
 def test_file_bad_request(myserver):
-    request = 'files/no_file'
-    res = myserver.get(f'/{request}')
+    request = ''
+    res = myserver.get(f'{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'text/plain'
