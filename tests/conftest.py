@@ -23,7 +23,7 @@ class Server:
 def is_env_path(env_name: str) -> Optional[str]:
     path = os.environ.get(env_name)
     if path and not Path(path).exists():
-        raise FileNotFoundError(f"no such file {path}")
+        raise FileNotFoundError(f"no such file or directory {path}")
     return path
 
 
@@ -33,9 +33,10 @@ def myserver(xprocess):
     config_path = is_env_path('CONFIG_PATH')
     data_path = is_env_path('DATA_PATH')
 
-    args_ = list()
-    if path:
-        args_.append(path)
+    if not path:
+        raise Exception('DELIVERY_APP')
+    args_ = [path]
+
     if config_path:
         args_.append(config_path)
     if data_path:
@@ -49,3 +50,17 @@ def myserver(xprocess):
     yield Server('http://127.0.0.1:8080/')
 
     xprocess.getinfo("myserver").terminate()
+
+
+@pytest.fixture(scope='module')
+def myserver_in_docker(xprocess):
+    command = os.environ['COMMAND_RUN']
+
+    class Starter(ProcessStarter):
+        pattern = 'Server has started...'
+        args = [command]
+
+    xprocess.ensure("myserver_in_docker", Starter)
+    yield Server('http://127.0.0.1:8080/')
+
+    xprocess.getinfo("myserver_in_docker").terminate()
