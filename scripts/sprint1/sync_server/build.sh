@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cd sprint1/problems/sync_server/solution
 mkdir -p build
 cd build

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cd sprint1/problems/restaurant_single_threaded/solution
 mkdir -p build
 cd build
