@@ -1,4 +1,6 @@
 import os
+import time
+
 import pytest
 import requests
 
@@ -54,13 +56,14 @@ def myserver(xprocess):
 
 @pytest.fixture(scope='module')
 def myserver_in_docker(xprocess):
-    command = os.environ['COMMAND_RUN']
+    commands = os.environ['COMMAND_RUN'].split()
+    server_domain = os.environ['SERVER_DOMAIN']
 
     class Starter(ProcessStarter):
         pattern = 'Server has started...'
-        args = [command]
+        args = commands
 
     xprocess.ensure("myserver_in_docker", Starter)
-    yield Server('http://127.0.0.1:8080/')
+    yield Server(f'http://{server_domain}:8080/')
 
     xprocess.getinfo("myserver_in_docker").terminate()
