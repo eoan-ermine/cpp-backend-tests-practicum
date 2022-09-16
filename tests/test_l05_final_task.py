@@ -67,7 +67,7 @@ bad_request = {
 
 def test_list(myserver_in_docker):
     request = 'api/v1/maps'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
@@ -75,7 +75,7 @@ def test_list(myserver_in_docker):
 
 def test_info(myserver_in_docker):
     request = 'api/v1/maps/map1'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
@@ -83,7 +83,7 @@ def test_info(myserver_in_docker):
 
 def test_map_not_found(myserver_in_docker):
     request = 'api/v1/maps/map33'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
     # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
@@ -91,7 +91,7 @@ def test_map_not_found(myserver_in_docker):
 
 def test_bad_request(myserver_in_docker):
     request = 'api/v333/maps/map1'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
     # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
