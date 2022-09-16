@@ -65,7 +65,7 @@ bad_request = {
 }
 # bad_request = json.dumps(bad_request, sort_keys=True, indent=2)
 
-def test_list(myserver):
+def test_list(myserver_in_docker):
     request = 'api/v1/maps'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
@@ -73,7 +73,7 @@ def test_list(myserver):
     # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
     assert res.json() == ans_list
 
-def test_info(myserver):
+def test_info(myserver_in_docker):
     request = 'api/v1/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 200
@@ -81,7 +81,7 @@ def test_info(myserver):
     # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
     assert res.json() == ans_info
 
-def test_map_not_found(myserver):
+def test_map_not_found(myserver_in_docker):
     request = 'api/v1/maps/map33'
     res = myserver.get(f'/{request}')
     assert res.status_code == 404
@@ -89,7 +89,7 @@ def test_map_not_found(myserver):
     # result = json.dumps(json.loads(res.text), sort_keys=True, indent=2)
     assert res.json() == map_not_found
 
-def test_bad_request(myserver):
+def test_bad_request(myserver_in_docker):
     request = 'api/v333/maps/map1'
     res = myserver.get(f'/{request}')
     assert res.status_code == 400
