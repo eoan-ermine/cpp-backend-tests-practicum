@@ -1,3 +1,5 @@
+#!/bin/bash
+
 REPO=${PWD}
 
 source ${REPO}/.venv/bin/activate

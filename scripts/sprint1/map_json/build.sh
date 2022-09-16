@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cd sprint1/problems/map_json/solution
 mkdir -p build
 cd build
