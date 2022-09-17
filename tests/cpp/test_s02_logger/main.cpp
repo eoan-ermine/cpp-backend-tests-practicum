@@ -37,17 +37,6 @@ bool CompareFiles(const std::filesystem::path& file_path, const std::filesystem:
         return false;
     }
 
-    fs.seekg(0, std::ifstream::beg);
-    ref_fs.seekg(0, std::ifstream::beg);
-    if (!std::equal(
-            std::istreambuf_iterator<char>(fs.rdbuf()),
-            std::istreambuf_iterator<char>(),
-            std::istreambuf_iterator<char>(ref_fs.rdbuf()))) {
-        std::cout << "file_path: " << file_path << std::endl;
-        std::cout << "ref_file_path: " << ref_file_path << std::endl;
-        std::cout << "Error: file content mismatch! " << std::endl;
-        return false;
-    }
     return true;
 }
 
