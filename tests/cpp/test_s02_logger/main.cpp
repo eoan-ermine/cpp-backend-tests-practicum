@@ -30,13 +30,6 @@ bool CompareFiles(const std::filesystem::path& file_path, const std::filesystem:
         return false;
     }
 
-    if (fs.tellg() != ref_fs.tellg()) {
-        std::cout << "file_path: " << file_path << std::endl;
-        std::cout << "ref_file_path: " << ref_file_path << std::endl;
-        std::cout << "Error: file size mismatch! " << std::endl;
-        return false;
-    }
-
     return true;
 }
 
