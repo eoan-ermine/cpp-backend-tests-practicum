@@ -61,7 +61,7 @@ std::filesystem::path GoUp(const std::filesystem::path& base, int steps) {
 
 int main() {
     const std::filesystem::path logs_path("/var/log");
-    const std::filesystem::path reference_path = GoUp(std::filesystem::current_path(), 5) / std::filesystem::path("cpp-backend-tests-practicum/tests/cpp/test_s02_logger/reference");
+    const std::filesystem::path reference_path = std::filesystem::current_path() / std::filesystem::path("cpp-backend-tests-practicum/tests/cpp/test_s02_logger/reference");
 
     Logger::GetInstance().SetTimestamp(std::chrono::system_clock::time_point{1000000s});
     LOG("Hello "sv, "world "s, 123);
