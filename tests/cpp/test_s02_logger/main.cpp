@@ -51,14 +51,6 @@ bool CompareFiles(const std::filesystem::path& file_path, const std::filesystem:
     return true;
 }
 
-std::filesystem::path GoUp(const std::filesystem::path& base, int steps) {
-    if (steps <= 0) {
-        return base;
-    } else {
-        return GoUp(base.parent_path(), steps - 1);
-    }
-}
-
 int main() {
     const std::filesystem::path logs_path("/var/log");
     const std::filesystem::path reference_path = std::filesystem::current_path() / std::filesystem::path("cpp-backend-tests-practicum/tests/cpp/test_s02_logger/reference");
