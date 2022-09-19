@@ -27,10 +27,13 @@ bool CompareFiles(const std::filesystem::path& file_path, const std::filesystem:
         return false;
     }
 
-    if (std::filesystem::file_size(file_path) != std::filesystem::file_size(ref_file_path)) {
+    auto file_size = std::filesystem::file_size(file_path);
+    auto ref_file_size = std::filesystem::file_size(ref_file_path);
+
+    if (file_size != ref_file_size) {
         std::cout << "file_path: " << file_path << std::endl;
         std::cout << "ref_file_path: " << ref_file_path << std::endl;
-        std::cout << "Error: file size mismatch! " << std::endl;
+        std::cout << "Error: file size mismatch! "  << file_size << " != " << ref_file_size << std::endl;
         return false;
     }
 
