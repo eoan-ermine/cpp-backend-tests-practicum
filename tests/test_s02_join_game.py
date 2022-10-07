@@ -187,3 +187,15 @@ def test_players_unknown_token(myserver_in_docker):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'unknownToken'
+
+
+def test_players_invalid_verb(myserver_in_docker):
+    request = 'api/v1/game/players'
+    header = {'content-type': 'application/json', 'authorization': 'Bearer 6516861d89ebfff147bf2eb2b5153ae1'}
+    res = myserver_in_docker.request('POST', header, request)
+    assert res.status_code == 400
+    assert res.headers['content-type'] == 'application/json'
+    assert res.headers['cache-control'] == 'no-cache'
+    res_json = res.json()
+    print(res_json)
+    assert res_json['code'] == 'invalidMethod'
