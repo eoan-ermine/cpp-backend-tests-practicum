@@ -61,53 +61,53 @@ bad_request = {
   "message": "Bad request"
 }
 
-def test_list(myserver):
+def test_list(myserver_in_docker):
     request = 'api/v1/maps'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == ans_list
 
-def test_info(myserver):
+def test_info(myserver_in_docker):
     request = 'api/v1/maps/map1'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == ans_info
 
-def test_map_not_found(myserver):
+def test_map_not_found(myserver_in_docker):
     request = 'api/v1/maps/map33'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == map_not_found
 
-def test_bad_request(myserver):
+def test_bad_request(myserver_in_docker):
     request = 'api/v333/maps/map1'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == bad_request
 
-def test_image(myserver):
+def test_image(myserver_in_docker):
     request = 'images/cube.svg'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'image/svg+xml'
 
-def test_file_not_found(myserver):
+def test_file_not_found(myserver_in_docker):
     request = 'images/ccccube.svg'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'text/plain'
 
-def test_index_html(myserver):
+def test_index_html(myserver_in_docker):
     request = 'index.html'
-    res = myserver.get(f'/{request}')
+    res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'text/html'
     request2 = ''
-    res2 = myserver.get(f'/{request2}')
+    res2 = myserver_in_docker.get(f'/{request2}')
     assert res2.status_code == 200
     assert res2.headers['content-type'] == 'text/html'
     assert res2.text == res.text

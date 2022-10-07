@@ -1,19 +1,32 @@
 import os
-import time
+import json
 
 import pytest
 import requests
 
 from xprocess import ProcessStarter
-from dataclasses import dataclass
 from urllib.parse import urljoin
 from pathlib import Path
 from typing import Optional
 
 
-@dataclass
 class Server:
-    url: str
+
+    def __init__(self, url, path):
+        self.url = url
+        self.file = open(path)
+        # self.file.readline()
+
+    def get_line(self):
+        return self.file.readline()
+
+    def get_log(self):
+        return json.loads(self.get_line())
+
+    def request(self, method, header, url, **kwargs):
+        req = requests.Request(method, self.url+url, headers=header, **kwargs).prepare()
+        with requests.Session() as session:
+            return session.send(req)
 
     def get(self, endpoint):
         return requests.get(urljoin(self.url, endpoint))
@@ -48,8 +61,8 @@ def myserver(xprocess):
         pattern = 'Server has started...'
         args = args_
 
-    xprocess.ensure("myserver", Starter)
-    yield Server('http://127.0.0.1:8080/')
+    _, path = xprocess.ensure("myserver", Starter)
+    yield Server('http://127.0.0.1:8080/', path)
 
     xprocess.getinfo("myserver").terminate()
 
@@ -63,7 +76,8 @@ def myserver_in_docker(xprocess):
         pattern = 'Server has started...'
         args = commands
 
-    xprocess.ensure("myserver_in_docker", Starter)
-    yield Server(f'http://{server_domain}:8080/')
+    _, path = xprocess.ensure("myserver_in_docker", Starter)
+
+    yield Server(f'http://{server_domain}:8080/', path)
 
     xprocess.getinfo("myserver_in_docker").terminate()
