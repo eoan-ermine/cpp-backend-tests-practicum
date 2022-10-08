@@ -121,7 +121,6 @@ def test_logs(myserver_in_docker):
     res = myserver_in_docker.get(f'/{request}')
     log_json = myserver_in_docker.get_log()
     assert log_json['message'] == 'request received'
-    assert log_json['data']['ip'] == '127.0.0.1'
     assert log_json['data']['URI'] == '/images/cube.svg'
     assert log_json['data']['method'] == 'GET'
     print(log_json)
