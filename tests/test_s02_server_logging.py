@@ -76,8 +76,6 @@ def test_logs(myserver_in_docker):
     assert log_json['message'] == 'response sent'
     assert log_json['data']['code'] == 200
     assert log_json['data']['content_type'] == 'image/svg+xml'
-    print(log_json)
-    assert 1 == 2
 
 def test_list(myserver_in_docker):
     request = 'api/v1/maps'
