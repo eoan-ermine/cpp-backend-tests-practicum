@@ -72,6 +72,10 @@ def test_logs(myserver_in_docker):
     assert log_json['message'] == 'request received'
     assert log_json['data']['method'] == 'GET'
     assert log_json['data']['URI'] == '/images/cube.svg'
+    log_json = myserver_in_docker.get_log()
+    assert log_json['message'] == 'response sent'
+    assert log_json['code'] == 200
+    assert log_json['content_type'] == 'image/svg+xml'
     print(log_json)
     assert 1 == 2
 
