@@ -99,7 +99,7 @@ def test_file_not_found(myserver_in_docker):
     request = 'images/ccccube.svg'
     res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 404
-    assert res.headers['content-type'] == 'text/plain'
+    assert res.headers['content-type'] == 'text/html'
 
 def test_index_html(myserver_in_docker):
     request = 'index.html'
