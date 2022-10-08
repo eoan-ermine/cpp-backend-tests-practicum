@@ -111,3 +111,8 @@ def test_index_html(myserver_in_docker):
     assert res2.status_code == 200
     assert res2.headers['content-type'] == 'text/html'
     assert res2.text == res.text
+
+def test_logs(myserver_in_docker):
+    log_json = myserver_in_docker.get_log()
+    print(log_json)
+    assert 1 == 2
