@@ -61,6 +61,20 @@ bad_request = {
   "message": "Bad request"
 }
 
+def test_logs(myserver_in_docker):
+    log_json = myserver_in_docker.get_log()
+    assert log_json['message'] == 'Server has started...'
+    assert log_json['data']['port'] == 8080
+    assert log_json['data']['address'] == '0.0.0.0'
+    request = 'images/cube.svg'
+    res = myserver_in_docker.get(f'/{request}')
+    log_json = myserver_in_docker.get_log()
+    assert log_json['message'] == 'request received'
+    assert log_json['data']['method'] == 'GET'
+    assert log_json['data']['URI'] == '/images/cube.svg'
+    print(log_json)
+    assert 1 == 2
+
 def test_list(myserver_in_docker):
     request = 'api/v1/maps'
     res = myserver_in_docker.get(f'/{request}')
@@ -111,17 +125,3 @@ def test_index_html(myserver_in_docker):
     assert res2.status_code == 200
     assert res2.headers['content-type'] == 'text/html'
     assert res2.text == res.text
-
-def test_logs(myserver_in_docker):
-    log_json = myserver_in_docker.get_log()
-    assert log_json['message'] == 'Server has started...'
-    assert log_json['data']['port'] == 8080
-    assert log_json['data']['address'] == '0.0.0.0'
-    request = 'images/cube.svg'
-    res = myserver_in_docker.get(f'/{request}')
-    log_json = myserver_in_docker.get_log()
-    assert log_json['message'] == 'request received'
-    assert log_json['data']['URI'] == '/images/cube.svg'
-    assert log_json['data']['method'] == 'GET'
-    print(log_json)
-    assert 1 == 2
