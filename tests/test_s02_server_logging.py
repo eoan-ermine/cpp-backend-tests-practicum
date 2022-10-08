@@ -114,5 +114,6 @@ def test_index_html(myserver_in_docker):
 
 def test_logs(myserver_in_docker):
     log_json = myserver_in_docker.get_log()
+    assert log_json['message'] == 'Server has started...'
     print(log_json)
     assert 1 == 2
