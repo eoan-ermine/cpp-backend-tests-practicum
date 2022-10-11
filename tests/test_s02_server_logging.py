@@ -96,14 +96,14 @@ def test_map_not_found(myserver_in_docker):
     res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
-    assert res.json() == map_not_found
+    assert res.json()["code"] == map_not_found["code"]
 
 def test_bad_request(myserver_in_docker):
     request = 'api/v333/maps/map1'
     res = myserver_in_docker.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
-    assert res.json() == bad_request
+    assert res.json()["code"] == bad_request["code"]
 
 def test_image(myserver_in_docker):
     request = 'images/cube.svg'
