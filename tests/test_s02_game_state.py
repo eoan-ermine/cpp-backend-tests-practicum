@@ -75,20 +75,13 @@ def test_state_success(server):
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
 
     res = server.request('GET', header, request)
+
+    assert res.status_code == 200
+    assert res.headers['content-type'] == 'application/json'
+    assert res.headers['cache-control'] == 'no-cache'
+
     res_json = res.json()
     print(res_json)
     for _, player in res_json['players'].items():
         assert player['speed'] == [0.0, 0.0]
         assert player['dir'] == 'U'
-
-
-def test_tick_success(server):
-    request = 'api/v1/game/tick'
-    header = {'content-type': 'application/json'}
-    data = {"timeDelta": 100}
-    res = server.request('POST', header, request, json=data)
-    res_json = res.json()
-    print(res_json)
-    assert False
-
-
