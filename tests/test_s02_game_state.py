@@ -53,20 +53,23 @@ def test_state_unknown_token(server, token: str):
     assert res_json['code'] == 'unknownToken'
 
 
-@pytest.mark.parametrize('method', {'OPTIONS', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'})
+@pytest.mark.parametrize('method', {'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'})
 def test_state_invalid_verb(server, method):
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json', 'authorization': 'Bearer 6516861d89ebfff147bf2eb2b5153ae1'}
     res = server.request(method, header, request)
-    assert res.status_code == 400
+    assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
+    for allow in res.headers['allow'].split(','):
+        assert allow.strip().upper() in {'GET', 'HEAD'}
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidMethod'
 
 
-def test_state_success(server):
+@pytest.mark.parametrize('method', {'GET', 'HEAD'})
+def test_state_success(server, method):
     maps = get_maps(server)
     res = join_to_map(server, "User1", maps[0]['id'])
     token = res.json()['authToken']
@@ -74,14 +77,14 @@ def test_state_success(server):
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
 
-    res = server.request('GET', header, request)
+    res = server.request(method, header, request)
 
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
 
-    res_json = res.json()
-    print(res_json)
-    for _, player in res_json['players'].items():
-        assert player['speed'] == [0.0, 0.0]
-        assert player['dir'] == 'U'
+    if method != 'HEAD':
+        res_json = res.json()
+        for _, player in res_json['players'].items():
+            assert player['speed'] == [0.0, 0.0]
+            assert player['dir'] == 'U'

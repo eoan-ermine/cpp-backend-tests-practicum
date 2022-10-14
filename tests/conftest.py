@@ -24,6 +24,7 @@ class Server:
 
     def request(self, method, header, url, **kwargs):
         req = requests.Request(method, urljoin(self.url, url), headers=header, **kwargs).prepare()
+        print(req.method)
         with requests.Session() as session:
             return session.send(req)
 

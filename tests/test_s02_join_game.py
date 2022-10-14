@@ -98,12 +98,15 @@ def test_join_invalid_verb(server, method):
     request = 'api/v1/game/join'
     header = {'content-type': 'application/json'}
     res = server.request(method, header, request)
-    assert res.status_code == 400
+
+    assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
-    res_json = res.json()
-    print(res_json)
-    assert res_json['code'] == 'invalidMethod'
+    assert res.headers['allow'].upper() == 'POST'
+
+    if method != 'HEAD':
+        res_json = res.json()
+        assert res_json['code'] == 'invalidMethod'
 
 
 @pytest.mark.randomize(min_length=1, max_length=100, str_attrs=('printable',), ncalls=10)
@@ -157,20 +160,22 @@ def test_players_unknown_token(server):
     assert res_json['code'] == 'unknownToken'
 
 
-@pytest.mark.parametrize('method', ['OPTIONS', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'])
+@pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
 def test_players_invalid_verb(server, method):
     request = 'api/v1/game/players'
     header = {'content-type': 'application/json', 'authorization': 'Bearer 6516861d89ebfff147bf2eb2b5153ae1'}
     res = server.request(method, header, request)
-    assert res.status_code == 400
+    assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
+    for allow in res.headers['allow'].split(','):
+        assert allow.strip().upper() in {'GET', 'HEAD'}
     res_json = res.json()
-    print(res_json)
     assert res_json['code'] == 'invalidMethod'
 
 
-def test_players_success(server):
+@pytest.mark.parametrize('method', {'GET', 'HEAD'})
+def test_players_success(server, method):
     maps = get_maps(server)
     res = join_to_map(server, 'User1', maps[0]['id'])
     token1 = res.json()['authToken']
@@ -179,17 +184,18 @@ def test_players_success(server):
 
     request = 'api/v1/game/players'
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token1}'}
-    res = server.request('GET', header, request)
+    res = server.request(method, header, request)
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
-    res_json1 = res.json()
 
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token2}'}
-    res = server.request('GET', header, request)
+    res = server.request(method, header, request)
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
-    res_json2 = res.json()
 
-    assert res_json1 == res_json2
+    if method != 'HEAD':
+        res_json1 = res.json()
+        res_json2 = res.json()
+        assert res_json1 == res_json2
