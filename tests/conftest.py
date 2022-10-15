@@ -15,7 +15,6 @@ class Server:
     def __init__(self, url, path):
         self.url = url
         self.file = open(path)
-        # self.file.readline()
 
     def get_line(self):
         return self.file.readline()
@@ -24,7 +23,8 @@ class Server:
         return json.loads(self.get_line())
 
     def request(self, method, header, url, **kwargs):
-        req = requests.Request(method, self.url+url, headers=header, **kwargs).prepare()
+        req = requests.Request(method, urljoin(self.url, url), headers=header, **kwargs).prepare()
+        print(req.method)
         with requests.Session() as session:
             return session.send(req)
 
@@ -58,7 +58,7 @@ def myserver(xprocess):
         args_.append(data_path)
 
     class Starter(ProcessStarter):
-        pattern = 'Server has started...'
+        pattern = '[Ss]erver has started'
         args = args_
 
     _, path = xprocess.ensure("myserver", Starter)
@@ -73,7 +73,7 @@ def myserver_in_docker(xprocess):
     server_domain = os.environ['SERVER_DOMAIN']
 
     class Starter(ProcessStarter):
-        pattern = 'Server has started...'
+        pattern = '[Ss]erver has started'
         args = commands
 
     _, path = xprocess.ensure("myserver_in_docker", Starter)
@@ -81,3 +81,20 @@ def myserver_in_docker(xprocess):
     yield Server(f'http://{server_domain}:8080/', path)
 
     xprocess.getinfo("myserver_in_docker").terminate()
+
+
+@pytest.fixture(scope='module')
+def server(xprocess):
+    commands = os.environ['COMMAND_RUN'].split()
+    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
+    server_port = os.environ.get('SERVER_PORT', '8080')
+
+    class Starter(ProcessStarter):
+        pattern = '[Ss]erver (has )?started'
+        args = commands
+
+    _, path = xprocess.ensure("server", Starter)
+
+    yield Server(f'http://{server_domain}:{server_port}/', path)
+
+    xprocess.getinfo("server").terminate()
