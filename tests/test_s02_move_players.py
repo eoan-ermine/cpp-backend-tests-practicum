@@ -4,6 +4,10 @@ ans_list = [
   {
     "id": "map1",
     "name": "Map 1"
+  },
+  {
+    "id": "town",
+    "name": "Town"
   }
 ]
 
