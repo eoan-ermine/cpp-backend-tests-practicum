@@ -115,12 +115,3 @@ def test_index_html(myserver_in_docker):
     assert res2.status_code == 200
     assert res2.headers['content-type'] == 'text/html'
     assert res2.text == res.text
-
-def test_move(myserver_in_docker):
-    request = 'api/v1/game/player/action'
-    res = myserver_in_docker.get(f'/{request}')
-    assert res.status_code == 200
-    assert res.headers['cache-control'] == 'no-cache'
-    assert res.headers['content-type'] == 'application/json'
-    assert res.headers['content-length'] == 2
-    assert res.json() == {}
