@@ -26,6 +26,7 @@ def test_join_invalid_map(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'mapNotFound'
+    assert res_json.get('message')
 
 
 def test_join_invalid_user_name(server):
@@ -40,6 +41,7 @@ def test_join_invalid_user_name(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_miss_user_name(server):
@@ -54,6 +56,7 @@ def test_join_miss_user_name(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_miss_map_id(server):
@@ -67,6 +70,7 @@ def test_join_miss_map_id(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_miss_data(server):
@@ -80,6 +84,7 @@ def test_join_miss_data(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_invalid_data(server):
@@ -92,7 +97,8 @@ def test_join_invalid_data(server):
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
     print(res_json)
-    assert res_json['code'] == 'invalidMethod'
+    assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', ['GET', 'OPTIONS', 'HEAD', 'PUT', 'PATCH', 'DELETE'])
@@ -110,6 +116,7 @@ def test_join_invalid_verb(server, method):
         res_json = res.json()
         print(res_json)
         assert res_json['code'] == 'invalidMethod'
+        assert res_json.get('message')
 
 
 @pytest.mark.randomize(min_length=1, max_length=100, str_attrs=('printable',), ncalls=10)
@@ -136,6 +143,7 @@ def test_players_miss_token(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidToken'
+    assert res_json.get('message')
 
 
 def test_players_invalid_token(server):
@@ -148,6 +156,7 @@ def test_players_invalid_token(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidToken'
+    assert res_json.get('message')
 
 
 def test_players_unknown_token(server):
@@ -160,6 +169,7 @@ def test_players_unknown_token(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'unknownToken'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
@@ -175,6 +185,7 @@ def test_players_invalid_verb(server, method):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidMethod'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', {'GET', 'HEAD'})

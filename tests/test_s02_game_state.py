@@ -25,6 +25,7 @@ def test_state_miss_token(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidToken'
+    assert res_json.get('message')
 
 
 @pytest.mark.randomize(min_length=0, max_length=31, str_attrs=('hexdigits',), ncalls=10)
@@ -38,6 +39,7 @@ def test_state_invalid_token(server, token: str):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidToken'
+    assert res_json.get('message')
 
 
 @pytest.mark.randomize(fixed_length=32, str_attrs=('hexdigits',), ncalls=10)
@@ -51,6 +53,7 @@ def test_state_unknown_token(server, token: str):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'unknownToken'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', {'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'})
@@ -66,6 +69,7 @@ def test_state_invalid_verb(server, method):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidMethod'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', {'GET', 'HEAD'})

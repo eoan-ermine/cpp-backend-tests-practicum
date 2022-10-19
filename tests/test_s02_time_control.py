@@ -27,6 +27,7 @@ def test_tick_miss_delta(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('delta', {0.0, '0', True})
@@ -43,6 +44,7 @@ def test_tick_invalid_type_delta(server, delta):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', {'GET', 'OPTIONS', 'HEAD', 'PUT', 'PATCH', 'DELETE'})
@@ -58,6 +60,7 @@ def test_tick_invalid_verb(server, method):
     if method != 'HEAD':
         res_json = res.json()
         assert res_json['code'] == 'invalidMethod'
+        assert res_json.get('message')
 
 
 @pytest.mark.randomize(min_num=0, max_num=10000, ncalls=10)
