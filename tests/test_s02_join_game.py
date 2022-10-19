@@ -26,6 +26,7 @@ def test_join_invalid_map(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'mapNotFound'
+    assert res_json.get('message')
 
 
 def test_join_invalid_user_name(server):
@@ -40,6 +41,7 @@ def test_join_invalid_user_name(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_miss_user_name(server):
@@ -54,6 +56,7 @@ def test_join_miss_user_name(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_miss_map_id(server):
@@ -67,6 +70,7 @@ def test_join_miss_map_id(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_miss_data(server):
@@ -80,6 +84,7 @@ def test_join_miss_data(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 def test_join_invalid_data(server):
@@ -91,6 +96,9 @@ def test_join_invalid_data(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
+    print(res_json)
+    assert res_json['code'] == 'invalidArgument'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', ['GET', 'OPTIONS', 'HEAD', 'PUT', 'PATCH', 'DELETE'])
@@ -106,12 +114,13 @@ def test_join_invalid_verb(server, method):
 
     if method != 'HEAD':
         res_json = res.json()
+        print(res_json)
         assert res_json['code'] == 'invalidMethod'
+        assert res_json.get('message')
 
 
 @pytest.mark.randomize(min_length=1, max_length=100, str_attrs=('printable',), ncalls=10)
 def test_join_success(server, name: str, request):
-    print(request.node)
     maps = get_maps(server)
     res = join_to_map(server, name, maps[0]['id'])
     assert res.status_code == 200
@@ -134,6 +143,7 @@ def test_players_miss_token(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidToken'
+    assert res_json.get('message')
 
 
 def test_players_invalid_token(server):
@@ -146,6 +156,7 @@ def test_players_invalid_token(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'invalidToken'
+    assert res_json.get('message')
 
 
 def test_players_unknown_token(server):
@@ -158,6 +169,7 @@ def test_players_unknown_token(server):
     res_json = res.json()
     print(res_json)
     assert res_json['code'] == 'unknownToken'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
@@ -171,7 +183,9 @@ def test_players_invalid_verb(server, method):
     for allow in res.headers['allow'].split(','):
         assert allow.strip().upper() in {'GET', 'HEAD'}
     res_json = res.json()
+    print(res_json)
     assert res_json['code'] == 'invalidMethod'
+    assert res_json.get('message')
 
 
 @pytest.mark.parametrize('method', {'GET', 'HEAD'})
@@ -184,18 +198,18 @@ def test_players_success(server, method):
 
     request = 'api/v1/game/players'
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token1}'}
-    res = server.request(method, header, request)
-    assert res.status_code == 200
-    assert res.headers['content-type'] == 'application/json'
-    assert res.headers['cache-control'] == 'no-cache'
+    res1 = server.request(method, header, request)
+    assert res1.status_code == 200
+    assert res1.headers['content-type'] == 'application/json'
+    assert res1.headers['cache-control'] == 'no-cache'
 
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token2}'}
-    res = server.request(method, header, request)
-    assert res.status_code == 200
-    assert res.headers['content-type'] == 'application/json'
-    assert res.headers['cache-control'] == 'no-cache'
+    res2 = server.request(method, header, request)
+    assert res2.status_code == 200
+    assert res2.headers['content-type'] == 'application/json'
+    assert res2.headers['cache-control'] == 'no-cache'
 
     if method != 'HEAD':
-        res_json1 = res.json()
-        res_json2 = res.json()
-        assert res_json1 == res_json2
+        res1_json = res1.json()
+        res2_json = res2.json()
+        assert res1_json == res2_json
