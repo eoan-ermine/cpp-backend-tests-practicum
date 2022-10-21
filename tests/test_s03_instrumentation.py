@@ -5,6 +5,8 @@ import subprocess
 
 from pathlib import Path
 
+import pytest
+
 
 def test_report():
     report_path = Path(os.environ['REPORT_PATH'])
@@ -14,9 +16,11 @@ def test_report():
     assert report['slowest_func_v2']
 
 
-def test_time():
+@pytest.mark.parametrize('execution_number', range(5))
+def test_time(execution_number):
     binary_path = os.environ['BINARY_PATH']
-    proc = subprocess.Popen(binary_path, shell=True)
+    arg = os.environ['ARG']
+    proc = subprocess.Popen([binary_path, arg], shell=True)
     start = time.time()
     proc.wait()
     delta = time.time() - start
