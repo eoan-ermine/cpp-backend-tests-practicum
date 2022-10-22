@@ -16,7 +16,7 @@ def test_perf_data(directory):
     assert file.stat().st_size
 
 
-def test_perf_data(directory):
+def test_graph(directory):
     file = directory / 'graph.svg'
     assert file.exists()
     assert file.stat().st_size
