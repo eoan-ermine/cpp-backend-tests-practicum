@@ -21,5 +21,4 @@ def test_graph(directory):
     assert file.exists()
     assert file.stat().st_size
     content = file.read_text()
-    print(content)
-    assert False
+    assert content.count('http_handler::RequestHandler')
