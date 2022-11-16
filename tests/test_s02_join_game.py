@@ -1,18 +1,5 @@
 import pytest
-
-
-def get_maps(server):
-    request = 'api/v1/maps'
-    res = server.get(request)
-    return res.json()
-
-
-def join_to_map(server, user_name, map_id):
-    request = 'api/v1/game/join'
-    header = {'content-type': 'application/json'}
-    maps = get_maps(server)
-    data = {"userName": user_name, "mapId": map_id}
-    return server.request('POST', header, request, json=data)
+import conftest as utils
 
 
 def test_join_invalid_map(server):
@@ -24,7 +11,7 @@ def test_join_invalid_map(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'mapNotFound'
     assert res_json.get('message')
 
@@ -32,14 +19,14 @@ def test_join_invalid_map(server):
 def test_join_invalid_user_name(server):
     request = 'api/v1/game/join'
     header = {'content-type': 'application/json'}
-    maps = get_maps(server)
+    maps = utils.get_maps(server)
     data = {"userName": "", "mapId": maps[0]['id']}
     res = server.request('POST', header, request, json=data)
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidArgument'
     assert res_json.get('message')
 
@@ -47,14 +34,14 @@ def test_join_invalid_user_name(server):
 def test_join_miss_user_name(server):
     request = 'api/v1/game/join'
     header = {'content-type': 'application/json'}
-    maps = get_maps(server)
+    maps = utils.get_maps(server)
     data = {"mapId": maps[0]['id']}
     res = server.request('POST', header, request, json=data)
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidArgument'
     assert res_json.get('message')
 
@@ -68,7 +55,7 @@ def test_join_miss_map_id(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidArgument'
     assert res_json.get('message')
 
@@ -82,7 +69,7 @@ def test_join_miss_data(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidArgument'
     assert res_json.get('message')
 
@@ -96,7 +83,7 @@ def test_join_invalid_data(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidArgument'
     assert res_json.get('message')
 
@@ -110,24 +97,26 @@ def test_join_invalid_verb(server, method):
     assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
-    assert res.headers['allow'].upper() == 'POST'
+    utils.check_allow(res.headers['allow'], {'POST'})
 
     if method != 'HEAD':
         res_json = res.json()
-        print(res_json)
+
         assert res_json['code'] == 'invalidMethod'
         assert res_json.get('message')
+    else:
+        assert '' == res.text
 
 
 @pytest.mark.randomize(min_length=1, max_length=100, str_attrs=('printable',), ncalls=10)
-def test_join_success(server, name: str, request):
-    maps = get_maps(server)
-    res = join_to_map(server, name, maps[0]['id'])
+def test_join_success(server, name: str):
+    maps = utils.get_maps(server)
+    res = utils.join_to_map(server, name, maps[0]['id'])
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert isinstance(res_json['playerId'], int)
     assert len(res_json['authToken']) == 32
     assert int(res_json['authToken'], 16)
@@ -141,7 +130,7 @@ def test_players_miss_token(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidToken'
     assert res_json.get('message')
 
@@ -154,7 +143,7 @@ def test_players_invalid_token(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidToken'
     assert res_json.get('message')
 
@@ -167,7 +156,7 @@ def test_players_unknown_token(server):
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'unknownToken'
     assert res_json.get('message')
 
@@ -180,20 +169,20 @@ def test_players_invalid_verb(server, method):
     assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
-    for allow in res.headers['allow'].split(','):
-        assert allow.strip().upper() in {'GET', 'HEAD'}
+    utils.check_allow(res.headers['allow'], {'GET', 'HEAD'})
+
     res_json = res.json()
-    print(res_json)
+
     assert res_json['code'] == 'invalidMethod'
     assert res_json.get('message')
 
 
-@pytest.mark.parametrize('method', {'GET', 'HEAD'})
+@pytest.mark.parametrize('method', ['GET', 'HEAD'])
 def test_players_success(server, method):
-    maps = get_maps(server)
-    res = join_to_map(server, 'User1', maps[0]['id'])
+    maps = utils.get_maps(server)
+    res = utils.join_to_map(server, 'User1', maps[0]['id'])
     token1 = res.json()['authToken']
-    res = join_to_map(server, 'User2', maps[0]['id'])
+    res = utils.join_to_map(server, 'User2', maps[0]['id'])
     token2 = res.json()['authToken']
 
     request = 'api/v1/game/players'
@@ -213,3 +202,6 @@ def test_players_success(server, method):
         res1_json = res1.json()
         res2_json = res2.json()
         assert res1_json == res2_json
+    else:
+        assert '' == res1.text
+        assert '' == res2.text

@@ -7,14 +7,15 @@ import requests
 from xprocess import ProcessStarter
 from urllib.parse import urljoin
 from pathlib import Path
-from typing import Optional
+from contextlib import contextmanager
+from typing import Set
 
 
 class Server:
 
-    def __init__(self, url, path):
+    def __init__(self, url: str, output: Path):
         self.url = url
-        self.file = open(path)
+        self.file = open(output)
 
     def get_line(self):
         return self.file.readline()
@@ -35,56 +36,35 @@ class Server:
         return requests.post(urljoin(self.url, endpoint), data)
 
 
-def is_env_path(env_name: str) -> Optional[str]:
-    path = os.environ.get(env_name)
-    if path and not Path(path).exists():
-        raise FileNotFoundError(f"no such file or directory {path}")
-    return path
-
-
-@pytest.fixture(scope='module')
-def myserver(xprocess):
-    path = is_env_path('DELIVERY_APP')
-    config_path = is_env_path('CONFIG_PATH')
-    data_path = is_env_path('DATA_PATH')
-
-    if not path:
-        raise Exception('DELIVERY_APP')
-    args_ = [path]
-
-    if config_path:
-        args_.append(config_path)
-    if data_path:
-        args_.append(data_path)
-
-    class Starter(ProcessStarter):
-        pattern = '[Ss]erver has started'
-        args = args_
-
-    _, path = xprocess.ensure("myserver", Starter)
-    yield Server('http://127.0.0.1:8080/', path)
-
-    xprocess.getinfo("myserver").terminate()
-
-
-@pytest.fixture(scope='module')
-def myserver_in_docker(xprocess):
-    commands = os.environ['COMMAND_RUN'].split()
-    server_domain = os.environ['SERVER_DOMAIN']
-
-    class Starter(ProcessStarter):
-        pattern = '[Ss]erver has started'
-        args = commands
-
-    _, path = xprocess.ensure("myserver_in_docker", Starter)
-
-    yield Server(f'http://{server_domain}:8080/', path)
-
-    xprocess.getinfo("myserver_in_docker").terminate()
+def pytest_generate_tests(metafunc):
+    config_path = os.environ.get('CONFIG_PATH')
+    if 'map_dict' in metafunc.fixturenames:
+        if config_path:
+            config_path = Path(config_path)
+            metafunc.parametrize(
+                'map_dict',
+                [
+                    pytest.param(map_dict, id=map_dict['name'])
+                    for map_dict in json.loads(config_path.read_text())['maps']
+                ],
+            )
+    if 'config' in metafunc.fixturenames:
+        if config_path:
+            config_path = Path(config_path)
+            metafunc.parametrize(
+                'config',
+                json.loads(config_path.read_text())
+            )
 
 
 @pytest.fixture(scope='module')
 def server(xprocess):
+    with _make_server(xprocess) as result:
+        yield result
+
+
+@contextmanager
+def _make_server(xprocess):
     commands = os.environ['COMMAND_RUN'].split()
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     server_port = os.environ.get('SERVER_PORT', '8080')
@@ -93,8 +73,68 @@ def server(xprocess):
         pattern = '[Ss]erver (has )?started'
         args = commands
 
-    _, path = xprocess.ensure("server", Starter)
+    _, output_path = xprocess.ensure("server", Starter)
 
-    yield Server(f'http://{server_domain}:{server_port}/', path)
+    yield Server(f'http://{server_domain}:{server_port}/', output_path)
 
     xprocess.getinfo("server").terminate()
+
+
+@pytest.fixture(scope='function')
+def server_one_test(xprocess):
+    with _make_server(xprocess) as result:
+        yield result
+
+
+def get_maps(server):
+    request = 'api/v1/maps'
+    res = server.get(request)
+    return res.json()
+
+
+def join_to_map(server, user_name: str, map_id: str):
+    request = 'api/v1/game/join'
+    header = {'content-type': 'application/json'}
+    data = {"userName": user_name, "mapId": map_id}
+    return server.request('POST', header, request, json=data)
+
+
+def sort_by_id(lst: list):
+    return sorted(lst, key=lambda x: x['id'])
+
+
+def get_maps_from_config(config: dict):
+    return sort_by_id([
+        {'id': map_dict['id'], 'name': map_dict['name']}
+        for map_dict
+        in config['maps']
+    ])
+
+
+def tick(server, delta: int):
+    request = 'api/v1/game/tick'
+    header = {'content-type': 'application/json'}
+    data = {"timeDelta": delta}
+    res = server.request('POST', header, request, json=data)
+    assert res.status_code == 200
+    return res
+
+
+def check_allow(header_allow: str, allows: Set[str]):
+    expected = set(verb.strip() for verb in header_allow.split(','))
+    assert expected == allows
+
+
+class Road:
+    def __init__(self, coordinates: dict):
+        x0 = coordinates['x0']
+        y0 = coordinates['y0']
+        x1 = coordinates.get('x1', x0)
+        y1 = coordinates.get('y1', y0)
+        self.x0 = min(x0, x1)
+        self.x1 = max(x0, x1)
+        self.y0 = min(y0, y1)
+        self.y1 = max(y0, y1)
+
+    def contains(self, x, y):
+        return self.x0 <= x <= self.x1 and self.y0 <= y <= self.y1

@@ -1,26 +1,26 @@
 
 
-def test_ping(myserver):
-    res = myserver.get('/ping')
+def test_ping(server):
+    res = server.get('/ping')
     assert res.status_code == 200
     assert res.text == 'pong'
 
 
-def test_pong(myserver):
-    res = myserver.get('/pong')
+def test_pong(server):
+    res = server.get('/pong')
     assert res.status_code == 200
     assert res.text == 'ping'
 
 
-def test_hello(myserver):
+def test_hello(server):
     name = 'John'
-    res = myserver.get(f'/hello/{name}')
+    res = server.get(f'/hello/{name}')
     assert res.status_code == 200
     assert res.text == f'Hello {name}!'
 
 
-def test_goodbye(myserver):
+def test_goodbye(server):
     name = 'John'
-    res = myserver.get(f'/goodbye/{name}')
+    res = server.get(f'/goodbye/{name}')
     assert res.status_code == 200
     assert res.text == f'Goodbye {name}!'

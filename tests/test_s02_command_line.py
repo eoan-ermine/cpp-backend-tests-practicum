@@ -1,5 +1,4 @@
 import pytest
-import requests
 
 
 def get_maps(server):
@@ -47,7 +46,7 @@ def test_tick_invalid_type_delta(server, delta):
     assert res_json.get('message')
 
 
-@pytest.mark.parametrize('method', {'GET', 'OPTIONS', 'HEAD', 'PUT', 'PATCH', 'DELETE'})
+@pytest.mark.parametrize('method', ['GET', 'OPTIONS', 'HEAD', 'PUT', 'PATCH', 'DELETE'])
 def test_tick_invalid_verb(server, method):
     request = 'api/v1/game/tick'
     header = {'content-type': 'application/json'}

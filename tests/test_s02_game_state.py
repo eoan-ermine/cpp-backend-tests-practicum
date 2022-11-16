@@ -1,5 +1,4 @@
 import pytest
-import requests
 
 
 def get_maps(server):
@@ -56,7 +55,7 @@ def test_state_unknown_token(server, token: str):
     assert res_json.get('message')
 
 
-@pytest.mark.parametrize('method', {'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'})
+@pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
 def test_state_invalid_verb(server, method):
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json', 'authorization': 'Bearer 6516861d89ebfff147bf2eb2b5153ae1'}
@@ -72,7 +71,7 @@ def test_state_invalid_verb(server, method):
     assert res_json.get('message')
 
 
-@pytest.mark.parametrize('method', {'GET', 'HEAD'})
+@pytest.mark.parametrize('method', ['GET', 'HEAD'])
 def test_state_success(server, method):
     maps = get_maps(server)
     res = join_to_map(server, "User1", maps[0]['id'])
