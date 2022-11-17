@@ -120,7 +120,7 @@ def test_file_not_found(server):
     request = 'images/ccccube.svg'
     res = server.get(f'/{request}')
     assert res.status_code == 404
-    assert res.headers['content-type'] == 'text/html'
+    assert res.headers['content-type'] == 'text/plain'
 
 
 def test_index_html(server):
