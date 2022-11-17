@@ -41,7 +41,7 @@ def test_percentiles(directory):
         print(lines[:10])
         timings = []
         for line in lines:
-            timings.append(line.split()[-10])
+            timings.append(float(line.split()[-10]))
         arr = np.array(timings)
         p50 = np.percentile(arr, 50)
         p90 = np.percentile(arr, 90)
