@@ -21,5 +21,4 @@ def test_only_200(directory):
     with open(os.path.join(logdirname, filename)) as phout:
         lines = phout.readlines()
         for line in lines:
-            if line.split()[-1] != '200':
-                print(line.split()[-1])
+            assert line.split()[-1] == '200'
