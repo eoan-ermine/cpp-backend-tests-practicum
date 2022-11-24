@@ -1,4 +1,3 @@
-
 import json
 import math
 from typing import List
@@ -71,7 +70,6 @@ class Vector2(Point):
 
 
 class Road:
-
     left_bottom_corner: Point
     right_top_corner: Point
 
@@ -111,7 +109,6 @@ class Road:
 
 @dataclass
 class Player:
-
     name: str
     token: str
     id: int
@@ -121,13 +118,10 @@ class Player:
     speed = Vector2(0, 0)
     direction = Direction.U
 
-    # def __init__(self, name, token, _id, x, y):
-    #     pass
-
     def __post_init__(self):
         self.position = Point(self.x, self.y)
         self.direction = Direction.U
-        del(self.x, self.y)                     # Is it a good practice?
+        del (self.x, self.y)  # Is it a good practice?
 
     def set_speed(self, direction, speed):
 
@@ -163,7 +157,6 @@ class Player:
 
 
 class GameSession:
-
     map = dict()
     players: List[Player] = list()
     default_speed = float()
@@ -225,7 +218,6 @@ class GameSession:
 
 
 class GameServer:
-
     config: dict
     sessions: List[GameSession] = list()
     default_speed: float
@@ -234,16 +226,18 @@ class GameServer:
         try:
             f = open(config_file_name)
             self.config = json.load(f)
-        except Exception as ex:
-            print(ex)
-            exit(-1)
+        except FileNotFoundError:
+            raise "Config file not found"
+
+        except json.decoder.JSONDecodeError:
+            raise "Unable to load json config"
 
         if 'defaultDogSpeed' in self.config.keys():
             self.default_speed = self.config['defaultDogSpeed']
 
     def get_maps(self):
         try:
-            map_list = []
+            map_list = list()
             for m in self.config['maps']:
                 map_list.append({'id': m['id'], 'name': m['name']})
             return map_list
@@ -298,7 +292,7 @@ class GameServer:
                 if player.token == token:
                     player.set_speed(direction, session.default_speed)
                     return True
-        return False    # There is no such player
+        return False  # There is no such player
 
     def tick(self, ticks):
         for session in self.sessions:
@@ -306,7 +300,6 @@ class GameServer:
 
 
 def bound(bound_1, bound_2, value):
-
     lower = min(bound_1, bound_2)
     upper = max(bound_1, bound_2)
 
