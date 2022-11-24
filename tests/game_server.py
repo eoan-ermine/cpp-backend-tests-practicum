@@ -1,25 +1,245 @@
 
 import json
+import math
+from typing import List
+from dataclasses import field, dataclass
+
+from enum import Enum
+
+
+class Direction(Enum):
+    U = 1
+    R = 2
+    D = 3
+    L = 4
+
+    def __str__(self):
+        return self.name
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+    def __le__(self, other):
+        other: Point
+        if self.x <= other.x and self.y <= other.y:
+            return True
+        else:
+            return False
+
+    def __ge__(self, other):
+        other: Point
+
+        if self.x >= other.x and self.y >= other.y:
+            return True
+        else:
+            return False
+
+    def __lt__(self, other):
+        other: Point
+        if self.x < other.x and self.y < other.y:
+            return True
+        else:
+            return False
+
+    def __str__(self):
+        return f'[{self.x}, {self.y}]'
+
+    def __add__(self, other):
+        other: Point
+        x = self.x + other.x
+        y = self.y + other.y
+        return Point(x, y)
+
+    @staticmethod
+    def measure_distance(a, b):
+        a: Point
+        b: Point
+
+        distance_sqr = (b.x - a.x) ** 2 + (b.y - a.y) ** 2
+        return math.sqrt(distance_sqr)
+
+
+class Vector2(Point):
+
+    def __mul__(self, other: float):
+        x = self.x * other
+        y = self.y * other
+        return Vector2(x, y)
+
+
+class Road:
+
+    left_bottom_corner: Point
+    right_top_corner: Point
+
+    def __init__(self, json_src: dict, width=0.4):
+
+        x0, y0 = json_src['x0'], json_src['y0']
+        if 'x1' in json_src.keys():
+            # horizontal road
+            x1, y1 = json_src['x1'], json_src['y0']
+        else:
+            # vertical
+            x1, y1 = json_src['x0'], json_src['y1']
+
+        left_bottom_x = min(x0, x1) - width
+        left_bottom_y = min(y0, y1) - width
+        right_top_x = max(x0, x1) + width
+        right_top_y = max(y0, y1) + width
+
+        self.left_bottom_corner = Point(left_bottom_x, left_bottom_y)
+        self.right_top_corner = Point(right_top_x, right_top_y)
+
+    def is_on_the_road(self, point) -> bool:
+        point: Point
+
+        if self.left_bottom_corner <= point <= self.right_top_corner:
+            return True
+        else:
+            return False
+
+    def bound_to_the_road(self, point) -> Point:
+        point: Point
+        new_x = bound(self.left_bottom_corner.x, self.right_top_corner.x, point.x)
+        new_y = bound(self.left_bottom_corner.y, self.right_top_corner.y, point.y)
+
+        return Point(new_x, new_y)
+
+
+@dataclass
+class Player:
+
+    name: str
+    token: str
+    id: int
+    x: float
+    y: float
+    position: Point = field(init=False)
+    speed = Vector2(0, 0)
+    direction = Direction.U
+
+    # def __init__(self, name, token, _id, x, y):
+    #     pass
+
+    def __post_init__(self):
+        self.position = Point(self.x, self.y)
+        self.direction = Direction.U
+        del(self.x, self.y)                     # Is it a good practice?
+
+    def set_speed(self, direction, speed):
+
+        direction = Direction[direction]
+
+        if direction == Direction.U:
+            self.speed = Vector2(0, speed)
+        elif direction == Direction.R:
+            self.speed = Vector2(speed, 0)
+        elif direction == Direction.D:
+            self.speed = Vector2(0, -speed)
+        elif direction == Direction.L:
+            self.speed = Vector2(-speed, 0)
+        else:
+            self.speed = Vector2(0, 0)
+            return
+        self.direction = direction
+
+    def set_position(self, position):
+        self.position = position
+
+    def get_state(self):
+        state = {
+            'pos': str(self.position),
+            'speed': str(self.speed),
+            'dir': str(self.direction)
+        }
+        return state
+
+    def estimate_new_position(self, ticks: int):
+        new_position: Point = self.position + self.speed * (ticks / 1000)
+        return new_position
+
+
+class GameSession:
+
+    map = dict()
+    players: List[Player] = list()
+    default_speed = float()
+    roads: List[Road] = list()
+
+    def __init__(self, game_map: dict, default_speed):
+        self.map = game_map
+        for r in game_map['roads']:
+            road = Road(r)
+            self.roads.append(road)
+
+        if 'dogSpeed' in game_map.keys():
+            self.default_speed = game_map['dogSpeed']
+        else:
+            self.default_speed = default_speed
+
+    def add_player(self, name, token, _id, x, y):
+        player = Player(name, token, _id, x, y)
+        self.players.append(player)
+
+    def get_state(self):
+        state = dict()
+        for player in self.players:
+            player_state = {
+                player.id: player.get_state()
+            }
+            state.update(player_state)
+        return state
+
+    def tick(self, ticks):
+        for player in self.players:
+            estimated_new_position = player.estimate_new_position(ticks)
+            new_position: Point = self.bounded_move(player.position, estimated_new_position)
+            player.position = new_position
+
+    def bounded_move(self, start_point: Point, stop_point: Point):
+
+        start_roads = list()
+        for road in self.roads:
+            if road.is_on_the_road(start_point):
+                start_roads.append(road)
+
+        if len(start_roads) == 0:
+            raise "Your glass if you are wrong"
+
+        most_far: Point = start_roads[0].bound_to_the_road(stop_point)
+        if len(start_roads) == 1:
+            return most_far
+        max_distance = Point.measure_distance(start_point, most_far)
+
+        for i in range(1, len(start_roads)):
+            pretender: Point = start_roads[i].bound_to_the_road(stop_point)
+            distance = Point.measure_distance(start_point, pretender)
+            if distance > max_distance:
+                most_far = pretender
+                max_distance = distance
+
+        return most_far
+
 
 class GameServer:
 
-    config = dict()
-    sessions = list()
-    default_speed = float()
+    config: dict
+    sessions: List[GameSession] = list()
+    default_speed: float
 
     def __init__(self, config_file_name):
-        self.load_config(config_file_name)
-        if 'defaultDogSpeed' in self.config.keys():
-            self.default_speed = self.config['defaultDogSpeed']
-
-    def load_config(self, config_file_name):
         try:
             f = open(config_file_name)
             self.config = json.load(f)
-            return True
         except Exception as ex:
             print(ex)
-            return False
+            exit(-1)
+
+        if 'defaultDogSpeed' in self.config.keys():
+            self.default_speed = self.config['defaultDogSpeed']
 
     def get_maps(self):
         try:
@@ -70,7 +290,7 @@ class GameServer:
                     return session.get_state()
         return False
 
-    def action(self, token, direction):
+    def move(self, token, direction):
 
         for session in self.sessions:
             session: GameSession
@@ -78,149 +298,17 @@ class GameServer:
                 if player.token == token:
                     player.set_speed(direction, session.default_speed)
                     return True
-        return False
+        return False    # There is no such player
 
     def tick(self, ticks):
         for session in self.sessions:
             session.tick(ticks)
 
 
-class Dog:
+def bound(bound_1, bound_2, value):
 
-    _id = int()
-    token = None
-    name = str()
-    x, y = int(), int()
-
-
-class Player:
-
-    dog = Dog()
-
-    speed = [0, 0]
-    direction = 'U'
-
-    def __init__(self, name, token, _id, x, y):
-        self.name = name
-        self.token = token
-        self.id = _id
-        self.x = x
-        self.y = y
-
-    def set_speed(self, direction, speed):
-
-        if direction == 'L':
-            self.speed = [-speed, 0]
-        elif direction == 'U':
-            self.speed = [0, speed]
-        elif direction == 'R':
-            self.speed = [speed, 0]
-        elif direction == 'D':
-            self.speed = [0, -speed]
-        else:
-            self.speed = [0, 0]
-            return
-        self.direction = direction
-
-    def set_position(self, position):
-        self.x, self.y = position
-
-    def get_state(self):
-        state = {
-            'pos': [self.x, self.y],
-            'speed': self.speed,
-            'dir': self.direction
-        }
-        return state
-
-
-class GameSession:
-
-    map = dict()
-    players = list()
-    default_speed = float()
-
-    def __init__(self, _map, default_speed):
-        self.map = _map
-        if 'DogSpeed' in self.map.keys():
-            self.default_speed = self.map['DogSpeed']
-        else:
-            self.default_speed = default_speed
-
-    def add_player(self, name, token, _id, x, y):
-        player = Player(name, token, _id, x, y)
-        self.players.append(player)
-
-    def get_state(self):
-        state = dict()
-        for player in self.players:
-            player_state = {
-                player.id: player.get_state()
-            }
-            state.update(player_state)
-        return state
-
-    def tick(self, ticks):
-        for player in self.players:
-            start_x, start_y = player.x, player.y
-            stop_x = start_x + player.speed[0] * (ticks / 1000)
-            stop_y = start_y + player.speed[1] * (ticks / 1000)
-            start_point = (start_x, start_y)
-            stop_point = (stop_x, stop_y)
-            true_stop_point = self.bounded_move(start_point, stop_point)
-            if true_stop_point != stop_point:
-                player.set_speed('S', 0)
-            player.set_position(true_stop_point)
-
-    def bounded_move(self, start_point, stop_point):
-        start_roads = list()    # Дороги, на которых стоит игрок в начале хода (может быть пересечение дорог)
-        for road in self.map['roads']:
-            if check_road_inclusion(road, start_point):
-                start_roads.append(road)
-        if len(start_roads) == 0:
-            raise "Your glass if you are wrong"
-        for road in start_roads:
-            if check_road_inclusion(road, stop_point):
-                return stop_point
-        return bound_move(start_roads[0], stop_point)   # При очень длинных тиках (больше длины дороги)
-                                                        # и старте с перекрёстка может вылезти баг
-
-
-def bound_move(road, point, road_width=0.4):
-    x0, y0 = (road['x0'], road['y0'])
-    if 'x1' in road.keys():
-        x1, y1 = (road['x1'], road['y0'])
-    else:
-        x1, y1 = (road['x0'], road['y1'])
-
-    return bound(x0, x1, point[0]), bound(y0, y1, point[1], road_width)
-
-
-def check_road_inclusion(road: dict, pose, road_width=0.4):
-    x0, y0 = (road['x0'], road['y0'])
-
-    if 'x1' in road.keys():
-        # horizontal road
-        x1, y1 = (road['x1'], road['y0'])
-    else:
-        # vertical road
-        x1, y1 = (road['x0'], road['y1'])
-
-    # check vertical inclusion
-    if not min(y0, y1) - road_width < pose[1] < max(y0, y1) + road_width:
-        return False
-
-    # check left side
-    if not min(x0, x1) - road_width < pose[0] < max(x0, x1) + road_width:
-        return False
-
-    return True
-
-
-def bound(bound_1, bound_2, value, road_width=0.4):
-
-    lower = min(bound_1, bound_2) - road_width
-    upper = max(bound_1, bound_2) + road_width
+    lower = min(bound_1, bound_2)
+    upper = max(bound_1, bound_2)
 
     result = min(upper, value)
     result = max(lower, result)
