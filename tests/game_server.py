@@ -3,18 +3,11 @@ from __future__ import annotations
 import json
 import logging
 import math
+
 from typing import List, Optional
 from dataclasses import dataclass
-
 from pathlib import Path
-
-
 from enum import Enum
-
-
-class ErrorCodes(Enum):
-    file_not_found = 100
-    unable_to_load_json = 101
 
 
 class Direction(Enum):
@@ -69,12 +62,8 @@ class Road:
     def __init__(self, json_src: dict, width=0.4):
 
         x0, y0 = json_src['x0'], json_src['y0']
-        if 'x1' in json_src.keys():
-            # horizontal road
-            x1, y1 = json_src['x1'], json_src['y0']
-        else:
-            # vertical
-            x1, y1 = json_src['x0'], json_src['y1']
+        x1 = json_src.get('x1', x0)
+        y1 = json_src.get('y1', y0)
 
         left_bottom_x = min(x0, x1) - width
         left_bottom_y = min(y0, y1) - width
@@ -100,25 +89,18 @@ class Player:
     token: str
     id: int
     position: Point
-    speed = Vector2D(0, 0)
-    direction = Direction.U
+
+    def __post_init__(self):
+        self.speed = Vector2D(0, 0)
+        self.direction = Direction.U
 
     def set_speed(self, direction: str, speed: float):
+        self.speed = get_speed(direction, speed)
 
-        direction = Direction[direction]
-
-        if direction == Direction.U:
-            self.speed = Vector2D(0, speed)
-        elif direction == Direction.R:
-            self.speed = Vector2D(speed, 0)
-        elif direction == Direction.D:
-            self.speed = Vector2D(0, -speed)
-        elif direction == Direction.L:
-            self.speed = Vector2D(-speed, 0)
-        else:
-            self.speed = Vector2D(0, 0)
-            return
-        self.direction = direction
+        try:
+            self.direction = Direction[direction]
+        except KeyError:
+            pass    # leave the direction unchanged
 
     def set_position(self, position: Point):
         self.position = position
@@ -138,16 +120,14 @@ class Player:
 
 class GameSession:
 
-    map = dict()
-    players: List[Player] = list()
-    default_speed = float()
-    roads: List[Road] = list()
-
     def __init__(self, game_map: dict, default_speed):
         self.map = game_map
+        self.roads: List[Road] = list()
         for r in game_map['roads']:
             road = Road(r)
             self.roads.append(road)
+
+        self.players: List[Player] = list()
 
         self.default_speed = game_map.get('dogSpeed', default_speed)
 
@@ -201,26 +181,21 @@ class GameSession:
 
 class GameServer:
 
-    config: dict
-    sessions: List[GameSession] = list()
-    default_speed: float
-
     def __init__(self, config_file_name: Path):  # pathlib
         try:
-            f = open(config_file_name)
-            self.config = json.load(f)
+            with open(config_file_name) as f:
+                self.config: dict = json.load(f)
         except FileNotFoundError:
             logging.error("Config file is not found. Check the file location: %s", config_file_name)
-            # Change on the pathlib notation
-
-            exit(-100)    # Как лучше оформлять человекочитаемые коды завершения? Через dict? enum?
+            raise
 
         except json.decoder.JSONDecodeError as ex:
             logging.error("Unable to load json config. Error: %s", ex.args[0])
-            exit(-101)
+            raise
 
-        if 'defaultDogSpeed' in self.config.keys():
-            self.default_speed = self.config['defaultDogSpeed']
+        self.default_speed = self.config.get('defaultDogSpeed')
+
+        self.sessions: List[GameSession] = list()
 
     def get_maps(self) -> Optional[List[dict]]:
         try:
@@ -235,9 +210,6 @@ class GameServer:
     def get_map(self, map_id: str) -> Optional[dict]:
         try:
             for m in self.config['maps']:
-                # Стоит ли собрать карты в отдельное поле сервера, чтобы не иметь двух возможностей словить keyerror?
-                # И в целом распарсить конфиг по полям класса на этапе инициализации, чтобы сразу их использовать?
-
                 if m['id'] == map_id:
                     return m
         except KeyError:
@@ -298,3 +270,25 @@ def bound(bound_1: float, bound_2: float, value: float) -> float:
     result = max(lower, result)
 
     return result
+
+
+def get_speed(direction: str, speed: float) -> Vector2D:
+    try:
+        direction = Direction[direction]
+
+        if direction == Direction.U:
+            speed = Vector2D(0, speed)
+        elif direction == Direction.R:
+            speed = Vector2D(speed, 0)
+        elif direction == Direction.D:
+            speed = Vector2D(0, -speed)
+        elif direction == Direction.L:
+            speed = Vector2D(-speed, 0)
+
+    except KeyError:
+        if direction == '':
+            speed = Vector2D(0, 0)
+        else:
+            raise
+
+    return speed
