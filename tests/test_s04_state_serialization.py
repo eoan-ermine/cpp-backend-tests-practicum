@@ -150,37 +150,37 @@ def test_kill(method):
                 assert res.json() != item.state
 
 
-# @pytest.mark.parametrize('method', ['GET'])
-# def test_tick(method):
-#     state_file = 'state'
-#     cache = defaultdict(Cache)
-#     with run_server(state_file) as (server, container):
-#         for map_dict in utils.get_maps_from_config_file(Path(os.environ['CONFIG_PATH'])):
-#             for name in ['user1', 'user2']:
-#                 map_id = map_dict['id']
-#
-#                 res = utils.join_to_map(server, name, map_id)
-#                 token = res.json()['authToken']
-#
-#                 cache[map_id].tokens.append(token)
-#
-#         utils.tick(server, 5000*1000)
-#         utils.tick(server, 5000*1000)
-#         utils.tick(server, 5000*1000)
-#
-#         for map_id, item in cache.items():
-#             token = item.tokens[0]
-#             request = 'api/v1/game/state'
-#             header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
-#             res = server.request(method, header, request)
-#             cache[map_id].state = res.json()
-#
-#         container.kill()
-#
-#     with run_server(state_file, remove_state=True) as (server, container):
-#         for item in cache.values():
-#             for token in item.tokens:
-#                 request = 'api/v1/game/state'
-#                 header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
-#                 res = server.request(method, header, request)
-#                 assert res.json() == item.state
+@pytest.mark.parametrize('method', ['GET'])
+def test_tick(method):
+    state_file = 'state'
+    cache = defaultdict(Cache)
+    with run_server(state_file) as (server, container):
+        for map_dict in utils.get_maps_from_config_file(Path(os.environ['CONFIG_PATH'])):
+            for name in ['user1', 'user2']:
+                map_id = map_dict['id']
+
+                res = utils.join_to_map(server, name, map_id)
+                token = res.json()['authToken']
+
+                cache[map_id].tokens.append(token)
+
+        utils.tick(server, 5000*1000)
+        utils.tick(server, 5000*1000)
+        utils.tick(server, 5000*1000)
+
+        for map_id, item in cache.items():
+            token = item.tokens[0]
+            request = 'api/v1/game/state'
+            header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
+            res = server.request(method, header, request)
+            cache[map_id].state = res.json()
+
+        container.kill()
+
+    with run_server(state_file, remove_state=True) as (server, container):
+        for item in cache.values():
+            for token in item.tokens:
+                request = 'api/v1/game/state'
+                header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
+                res = server.request(method, header, request)
+                assert res.json() == item.state
