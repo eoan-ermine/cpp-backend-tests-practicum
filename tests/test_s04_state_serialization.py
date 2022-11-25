@@ -49,11 +49,12 @@ def run_server(state, remove_state=False):
         'entrypoint': entrypoint,
         'auto_remove': True,
         'ports': {f"{server_port}/tcp": server_port},
-        'domainname': server_domain,
         'volumes': {volume_path(): {'bind': '/tmp/volume', 'mode': 'rw'}},
     }
     if docker_network:
         kwargs['network'] = docker_network
+    if server_domain != '127.0.0.1':
+        kwargs['name'] = server_domain
     container = client.containers.run(
         get_image_name(),
         **kwargs
