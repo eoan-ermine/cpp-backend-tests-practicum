@@ -8,14 +8,15 @@ from xprocess import ProcessStarter
 from urllib.parse import urljoin
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Set
+from typing import Set, Optional
 
 
 class Server:
 
-    def __init__(self, url: str, output: Path):
+    def __init__(self, url: str, output: Optional[Path] = None):
         self.url = url
-        self.file = open(output)
+        if output:
+            self.file = open(output)
 
     def get_line(self):
         return self.file.readline()
@@ -25,7 +26,6 @@ class Server:
 
     def request(self, method, header, url, **kwargs):
         req = requests.Request(method, urljoin(self.url, url), headers=header, **kwargs).prepare()
-        print(req.method)
         with requests.Session() as session:
             return session.send(req)
 
@@ -34,6 +34,10 @@ class Server:
 
     def post(self, endpoint, data):
         return requests.post(urljoin(self.url, endpoint), data)
+
+
+def get_maps_from_config_file(config: Path):
+    return json.loads(config.read_text())['maps']
 
 
 def pytest_generate_tests(metafunc):
@@ -45,7 +49,7 @@ def pytest_generate_tests(metafunc):
                 'map_dict',
                 [
                     pytest.param(map_dict, id=map_dict['name'])
-                    for map_dict in json.loads(config_path.read_text())['maps']
+                    for map_dict in get_maps_from_config_file(config_path)
                 ],
             )
     if 'config' in metafunc.fixturenames:
