@@ -67,7 +67,7 @@ def server(xprocess):
 def _make_server(xprocess):
     commands = os.environ['COMMAND_RUN'].split()
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-    server_port = os.environ.get('SERVER_PORT', '8080')
+    server_port = os.environ.get('SERVER_PORT', '80')
 
     class Starter(ProcessStarter):
         pattern = '[Ss]erver (has )?started'

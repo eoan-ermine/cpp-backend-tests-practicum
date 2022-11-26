@@ -34,13 +34,17 @@ class Point:
     def __lt__(self, other: Point) -> bool:
         return self.x < other.x and self.y < other.y
 
-    def __str__(self) -> str:
-        return f'[{self.x}, {self.y}]'
-
     def __add__(self, other: Point) -> Point:
         x = self.x + other.x
         y = self.y + other.y
         return Point(x, y)
+
+    def __str__(self) -> str:
+        return f'[{self.x:.1f}, {self.y:.1f}]'
+
+    def to_list(self):
+        return [self.x, self.y]
+
 
     @staticmethod
     def measure_distance(a: Point, b: Point) -> float:
@@ -89,10 +93,8 @@ class Player:
     token: str
     id: int
     position: Point
-
-    def __post_init__(self):
-        self.speed = Vector2D(0, 0)
-        self.direction = Direction.U
+    speed: Vector2D = Vector2D(0, 0)
+    direction: Direction = Direction.U
 
     def set_speed(self, direction: str, speed: float):
         self.speed = get_speed(direction, speed)
@@ -107,8 +109,8 @@ class Player:
 
     def get_state(self) -> Optional[dict]:
         state = {
-            'pos': str(self.position),
-            'speed': str(self.speed),
+            'pos': self.position.to_list(),
+            'speed': self.speed.to_list(),
             'dir': str(self.direction)
         }
         return state
@@ -139,10 +141,11 @@ class GameSession:
         state = dict()
         for player in self.players:
             player_state = {
-                player.id: player.get_state()
+                str(player.id): player.get_state()
             }
             state.update(player_state)
-        return state
+
+        return {'players': state}
 
     def tick(self, ticks: int):
         for player in self.players:
@@ -150,6 +153,8 @@ class GameSession:
             new_position: Point = self.bounded_move(player.position, estimated_new_position)
             if new_position is not None:
                 player.set_position(new_position)
+            if new_position != estimated_new_position:
+                player.set_speed('', 0)
 
     def bounded_move(self, start_point: Point, stop_point: Point) -> Optional[Point]:
         start_roads: List[Road] = list()
@@ -277,11 +282,11 @@ def get_speed(direction: str, speed: float) -> Vector2D:
         direction = Direction[direction]
 
         if direction == Direction.U:
-            speed = Vector2D(0, speed)
+            speed = Vector2D(0, -speed)
         elif direction == Direction.R:
             speed = Vector2D(speed, 0)
         elif direction == Direction.D:
-            speed = Vector2D(0, -speed)
+            speed = Vector2D(0, speed)
         elif direction == Direction.L:
             speed = Vector2D(-speed, 0)
 
