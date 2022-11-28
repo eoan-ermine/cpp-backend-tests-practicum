@@ -4,6 +4,8 @@ import pytest
 import conftest as utils
 
 
+defaultBagCapacity = 3
+
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
 def test_map_invalid_verb(server, method, map_dict):
     map_id = map_dict['id']
@@ -122,6 +124,12 @@ def test_state_success(server_one_test, method, map_dict):
                 assert isinstance(player['dir'], str)
                 assert len(player['dir']) == 1
                 assert player['dir'] == 'U'
+
+                assert isinstance(player['bag'], list)
+                assert len(player['bag']) <= defaultBagCapacity
+                for item in player['bag']:
+                    assert isinstance(item['id'], int)
+                    assert isinstance(item['type'], int)
 
             assert res_json['lostObjects']
             assert isinstance(res_json['lostObjects'], dict)
