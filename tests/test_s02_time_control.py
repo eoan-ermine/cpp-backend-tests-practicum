@@ -7,11 +7,9 @@ import game_server as game
 from game_server import Point, Direction
 
 
-config_path = pathlib.Path(os.environ.get('CONFIG_PATH'))
-
-
 @pytest.fixture()
 def game_server():
+    config_path = pathlib.Path(os.environ['CONFIG_PATH'])
     yield game.GameServer(config_path)
 
 
