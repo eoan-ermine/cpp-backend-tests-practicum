@@ -55,6 +55,16 @@ def pytest_generate_tests(metafunc):
                 'config',
                 json.loads(config_path.read_text())
             )
+    if 'map_id' in metafunc.fixturenames:
+        if config_path:
+            config_path = Path(config_path)
+            metafunc.parametrize(
+                'map_id',
+                [
+                    pytest.param(map_dict['id'], id=map_dict['id'])
+                    for map_dict in json.loads(config_path.read_text())['maps']
+                ],
+            )
 
 
 @pytest.fixture(scope='module')
@@ -67,7 +77,7 @@ def server(xprocess):
 def _make_server(xprocess):
     commands = os.environ['COMMAND_RUN'].split()
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-    server_port = os.environ.get('SERVER_PORT', '80')
+    server_port = os.environ.get('SERVER_PORT', '8080')
 
     class Starter(ProcessStarter):
         pattern = '[Ss]erver (has )?started'

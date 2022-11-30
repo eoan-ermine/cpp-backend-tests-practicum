@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import random
 
 from typing import List, Optional
 from dataclasses import dataclass
@@ -19,6 +20,16 @@ class Direction(Enum):
     def __str__(self):
         return self.name
 
+    @staticmethod
+    def random():
+        return Direction[Direction.random_str()]
+
+    @staticmethod
+    def random_str():
+        directions: list = Direction.__dict__['_member_names_']
+        index = random.randint(0, len(directions) - 1)
+        d = directions[index]
+        return d
 
 @dataclass
 class Point:
@@ -44,7 +55,6 @@ class Point:
 
     def to_list(self):
         return [self.x, self.y]
-
 
     @staticmethod
     def measure_distance(a: Point, b: Point) -> float:
@@ -93,7 +103,7 @@ class Player:
     token: str
     id: int
     position: Point
-    speed: Vector2D = Vector2D(0, 0)
+    speed: Vector2D = Vector2D(0.0, 0.0)
     direction: Direction = Direction.U
 
     def set_speed(self, direction: str, speed: float):
@@ -154,7 +164,7 @@ class GameSession:
             if new_position is not None:
                 player.set_position(new_position)
             if new_position != estimated_new_position:
-                player.set_speed('', 0)
+                player.set_speed('', 0.0)
 
     def bounded_move(self, start_point: Point, stop_point: Point) -> Optional[Point]:
         start_roads: List[Road] = list()
@@ -282,17 +292,17 @@ def get_speed(direction: str, speed: float) -> Vector2D:
         direction = Direction[direction]
 
         if direction == Direction.U:
-            speed = Vector2D(0, -speed)
+            speed = Vector2D(0.0, -speed)
         elif direction == Direction.R:
-            speed = Vector2D(speed, 0)
+            speed = Vector2D(speed, 0.0)
         elif direction == Direction.D:
-            speed = Vector2D(0, speed)
+            speed = Vector2D(0.0, speed)
         elif direction == Direction.L:
-            speed = Vector2D(-speed, 0)
+            speed = Vector2D(-speed, 0.0)
 
     except KeyError:
         if direction == '':
-            speed = Vector2D(0, 0)
+            speed = Vector2D(0.0, 0.0)
         else:
             raise
 
