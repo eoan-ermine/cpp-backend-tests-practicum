@@ -26,10 +26,8 @@ class Direction(Enum):
 
     @staticmethod
     def random_str():
-        directions: list = Direction.__dict__['_member_names_']
-        index = random.randint(0, len(directions) - 1)
-        d = directions[index]
-        return d
+        return random.choice(Direction.__dict__['_member_names_'])
+
 
 @dataclass
 class Point:

@@ -174,7 +174,7 @@ def test_match_roads(server, game_server):
 
 @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
 def test_turn_one_player(server_one_test, game_server, direction, map_id):
-    token, player_id = add_player(server_one_test, game_server, map_id, 'player')
+    token, _ = add_player(server_one_test, game_server, map_id, 'player')
     move_players(server_one_test, game_server, token, direction)
     state, py_state = get_states(server_one_test, game_server, token)
 
@@ -184,14 +184,13 @@ def test_turn_one_player(server_one_test, game_server, direction, map_id):
 @pytest.mark.randomize(min_num=0, max_num=250, ncalls=5)
 @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
 def test_small_move_one_player(server_one_test, game_server, direction, ticks: int, map_id):
-    token, player_id = add_player(server_one_test, game_server, map_id, 'player')
+    token, _ = add_player(server_one_test, game_server, map_id, 'player')
     move_players(server_one_test, game_server, token, direction)
     state, py_state = get_states(server_one_test, game_server, token)
 
     assert py_state == state
 
-    tick_server(server_one_test, ticks)
-    game_server.tick(ticks)
+    tick_both(server_one_test, game_server, ticks)
     state, py_state = get_states(server_one_test, game_server, token)
     print(py_state)
     print(state)
@@ -202,14 +201,13 @@ def test_small_move_one_player(server_one_test, game_server, direction, ticks: i
 @pytest.mark.randomize(min_num=1000, max_num=100000, ncalls=5)
 @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
 def test_big_move_one_player(server_one_test, game_server, direction, ticks: int, map_id):
-    token, player_id = add_player(server_one_test, game_server, map_id, 'player')
+    token, _ = add_player(server_one_test, game_server, map_id, 'player')
     move_players(server_one_test, game_server, token, direction)
     state, py_state = get_states(server_one_test, game_server, token)
 
     assert py_state == state
 
-    tick_server(server_one_test, ticks)
-    game_server.tick(ticks)
+    tick_both(server_one_test, game_server, ticks)
     state, py_state = get_states(server_one_test, game_server, token)
     print(py_state)
     print(state)
@@ -218,7 +216,7 @@ def test_big_move_one_player(server_one_test, game_server, direction, ticks: int
 
 
 def test_move_sequence_one_player(server_one_test, game_server, map_id):
-    token, player_id = add_player(server_one_test, game_server, map_id, 'player')
+    token, _ = add_player(server_one_test, game_server, map_id, 'player')
 
     # commented lines - forced test (with particular random seed) to break due to a wierd bug in the c++ solution
     # uncommented lines doesn't break the test,
@@ -234,9 +232,11 @@ def test_move_sequence_one_player(server_one_test, game_server, map_id):
         # also to break the test comment the line above and uncomment the following:
         # direction = valid_directions[random.randint(0, max_index)]
 
-        ticks = random.randint(10, 10000)
         move_players(server_one_test, game_server, token, direction)
+
+        ticks = random.randint(10, 10000)
         tick_both(server_one_test, game_server, ticks)
+
         state, py_state = get_states(server_one_test, game_server, token)
         print(direction, ticks)
         print('Server:', state)
@@ -248,10 +248,12 @@ def test_move_sequence_one_player(server_one_test, game_server, map_id):
 @pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
 @pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
 def test_two_players_turns(server_one_test, game_server, direction_1, direction_2, map_id):
-    token_1, player_id_1 = add_player(server_one_test, game_server, map_id, 'Player 1')
-    token_2, player_id_2 = add_player(server_one_test, game_server, map_id, 'Player 2')
+    token_1, _ = add_player(server_one_test, game_server, map_id, 'Player 1')
+    token_2, _ = add_player(server_one_test, game_server, map_id, 'Player 2')
+
     move_players(server_one_test, game_server, token_1, direction_1)
     move_players(server_one_test, game_server, token_2, direction_2)
+
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
@@ -260,11 +262,11 @@ def test_two_players_turns(server_one_test, game_server, direction_1, direction_
 
 
 @pytest.mark.randomize(min_num=0, max_num=250, ncalls=5)
-@pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])   # Есть ощущение, что это слишком оверкилл
-@pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])   # Мб имеет смысл рандомайзером нагенерить 3-5 пар?
+@pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
+@pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
 def test_two_players_small_move(server_one_test, game_server, direction_1, direction_2, map_id, ticks: int):
-    token_1, player_id_1 = add_player(server_one_test, game_server, map_id, 'Player 1')
-    token_2, player_id_2 = add_player(server_one_test, game_server, map_id, 'Player 2')
+    token_1, _ = add_player(server_one_test, game_server, map_id, 'Player 1')
+    token_2, _ = add_player(server_one_test, game_server, map_id, 'Player 2')
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
@@ -273,7 +275,9 @@ def test_two_players_small_move(server_one_test, game_server, direction_1, direc
 
     move_players(server_one_test, game_server, token_1, direction_1)
     move_players(server_one_test, game_server, token_2, direction_2)
+
     tick_both(server_one_test, game_server, ticks)
+
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
@@ -285,8 +289,8 @@ def test_two_players_small_move(server_one_test, game_server, direction_1, direc
 @pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])   # Аналогично предыдущему
 @pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
 def test_two_players_big_move(server_one_test, game_server, direction_1, direction_2, map_id, ticks: int):
-    token_1, player_id_1 = add_player(server_one_test, game_server, map_id, 'Player 1')
-    token_2, player_id_2 = add_player(server_one_test, game_server, map_id, 'Player 2')
+    token_1, _ = add_player(server_one_test, game_server, map_id, 'Player 1')
+    token_2, _ = add_player(server_one_test, game_server, map_id, 'Player 2')
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
@@ -304,8 +308,8 @@ def test_two_players_big_move(server_one_test, game_server, direction_1, directi
 
 
 def test_two_players_sequences(server_one_test, game_server, map_id):
-    token_1, player_id_1 = add_player(server_one_test, game_server, map_id, 'Player 1')
-    token_2, player_id_2 = add_player(server_one_test, game_server, map_id, 'Player 2')
+    token_1, _ = add_player(server_one_test, game_server, map_id, 'Player 1')
+    token_2, _ = add_player(server_one_test, game_server, map_id, 'Player 2')
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
@@ -314,11 +318,14 @@ def test_two_players_sequences(server_one_test, game_server, map_id):
 
     for _ in range(0, 10):
         direction_1 = Direction.random_str()
-        direction_2 = Direction.random_str()
-        ticks = random.randint(0, 10000)
         move_players(server_one_test, game_server, token_1, direction_1)
+
+        direction_2 = Direction.random_str()
         move_players(server_one_test, game_server, token_2, direction_2)
+
+        ticks = random.randint(0, 10000)
         tick_both(server_one_test, game_server, ticks)
+
         state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
         state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
