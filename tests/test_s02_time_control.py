@@ -179,7 +179,7 @@ def test_turn_one_player(server_one_test, game_server, direction, map_id):
     assert py_state == state
 
 
-@pytest.mark.randomize(min_num=0, max_num=250, ncalls=5)
+@pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
 @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
 def test_small_move_one_player(server_one_test, game_server, direction, ticks: int, map_id):
     token, _ = add_player(server_one_test, game_server, map_id, 'player')
@@ -196,7 +196,7 @@ def test_small_move_one_player(server_one_test, game_server, direction, ticks: i
     assert py_state == state
 
 
-@pytest.mark.randomize(min_num=1000, max_num=100000, ncalls=5)
+@pytest.mark.randomize(min_num=1000, max_num=100000, ncalls=3)
 @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
 def test_big_move_one_player(server_one_test, game_server, direction, ticks: int, map_id):
     token, _ = add_player(server_one_test, game_server, map_id, 'player')
@@ -259,10 +259,8 @@ def test_two_players_turns(server_one_test, game_server, direction_1, direction_
     assert state_2 == py_state_2
 
 
-@pytest.mark.randomize(min_num=0, max_num=250, ncalls=5)
-@pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
-@pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
-def test_two_players_small_move(server_one_test, game_server, direction_1, direction_2, map_id, ticks: int):
+@pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
+def test_two_players_small_move(server_one_test, game_server, map_id, ticks: int):
     token_1, _ = add_player(server_one_test, game_server, map_id, 'Player 1')
     token_2, _ = add_player(server_one_test, game_server, map_id, 'Player 2')
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
@@ -271,7 +269,10 @@ def test_two_players_small_move(server_one_test, game_server, direction_1, direc
     assert state_1 == py_state_1
     assert state_2 == py_state_2
 
+    direction_1 = Direction.random_str()
     move_players(server_one_test, game_server, token_1, direction_1)
+
+    direction_2 = Direction.random_str()
     move_players(server_one_test, game_server, token_2, direction_2)
 
     tick_both(server_one_test, game_server, ticks)
@@ -283,10 +284,8 @@ def test_two_players_small_move(server_one_test, game_server, direction_1, direc
     assert state_2 == py_state_2
 
 
-@pytest.mark.randomize(min_num=250, max_num=10000, ncalls=5)
-@pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])   # Аналогично предыдущему
-@pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
-def test_two_players_big_move(server_one_test, game_server, direction_1, direction_2, map_id, ticks: int):
+@pytest.mark.randomize(min_num=250, max_num=10000, ncalls=3)
+def test_two_players_big_move(server_one_test, game_server, map_id, ticks: int):
     token_1, _ = add_player(server_one_test, game_server, map_id, 'Player 1')
     token_2, _ = add_player(server_one_test, game_server, map_id, 'Player 2')
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
@@ -295,8 +294,12 @@ def test_two_players_big_move(server_one_test, game_server, direction_1, directi
     assert state_1 == py_state_1
     assert state_2 == py_state_2
 
+    direction_1 = Direction.random_str()
     move_players(server_one_test, game_server, token_1, direction_1)
+
+    direction_2 = Direction.random_str()
     move_players(server_one_test, game_server, token_2, direction_2)
+
     tick_both(server_one_test, game_server, ticks)
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
