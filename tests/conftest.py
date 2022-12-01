@@ -59,6 +59,16 @@ def pytest_generate_tests(metafunc):
                 'config',
                 json.loads(config_path.read_text())
             )
+    if 'map_id' in metafunc.fixturenames:
+        if config_path:
+            config_path = Path(config_path)
+            metafunc.parametrize(
+                'map_id',
+                [
+                    pytest.param(map_dict['id'], id=map_dict['id'])
+                    for map_dict in json.loads(config_path.read_text())['maps']
+                ],
+            )
 
 
 @pytest.fixture(scope='module')
