@@ -82,7 +82,7 @@ class Server:
                               f'Response: {params}')
         return token, player_id
 
-    def get_state(self, token) -> Optional[dict]:
+    def get_state(self, token: str) -> Optional[dict]:
         request = '/api/v1/game/state'
         header = {'content-type': 'application/json',
                   'Authorization': f'Bearer {token}'}
@@ -91,7 +91,7 @@ class Server:
         self.validate_response(res)
         return res.json()
 
-    def get_player_state(self, token, player_id):
+    def get_player_state(self, token: str, player_id: int) -> Optional[dict]:
         game_session_state = self.get_state(token)
         players = game_session_state.get('players')
 
