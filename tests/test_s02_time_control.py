@@ -13,85 +13,35 @@ def game_server():
     yield game.GameServer(config_path)
 
 
-def tick_server(server, delta):
-    request = 'api/v1/game/tick'
-    header = {'content-type': 'application/json'}
-    data = {"timeDelta": delta}
-    res = server.request('POST', header, request, json=data)
-    return res
-
-
-def get_maps(server):
-    request = 'api/v1/maps'
-    res = server.get(request)
-    return res.json()
-
-
-def get_map(server, map_id):
-    request = 'api/v1/maps/' + map_id
-    res = server.get(request)
-    return res.json()
-
-
-def get_state(server, token):
-    request = '/api/v1/game/state'
-    header = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
-    res = server.request('GET', header, request)
-    return res.json()
-
-
 def get_states(server, game_server: game.GameServer, token):
-    state = get_state(server, token)
+    state = server.get_state(token)
     py_state = game_server.get_state(token)
     return state, py_state
 
 
-def get_player_state(server, token, player_id):
-    state: dict = get_state(server, token)
-    players: dict = state.get('players')
-    player_state = players.get(str(player_id))
-    return player_state
-
-
 def get_parsed_state(server, token, player_id):
-    state: dict = get_player_state(server, token, player_id)
+    state: dict = server.get_state(token, player_id)
     pos = state.get('pos')
     speed = state.get('speed')
     direction = state.get('dir')
     return pos, speed, direction
 
 
-def move_player(server, token, direction: str):
-    request = '/api/v1/game/player/action'
-    header = {'content-type': 'application/json',  'Authorization': f'Bearer {token}'}
-    data = {"move": direction}
-    return server.request('POST', header, request, json=data)
-
-
 def move_players(server, game_server: game.GameServer, token, direction):
-    move_player(server, token, direction)
+    server.move(token, direction)
     game_server.move(token, direction)
 
 
 def tick_both(server, game_server: game.GameServer, ticks):
-    tick_server(server, ticks)
+    server.tick(ticks)
     game_server.tick(ticks)
 
 
 def add_player(server, game_server, map_id, name):
-    params: dict = join_to_map(server, name, map_id).json()
-    token = params['authToken']
-    player_id = params['playerId']
+    token, player_id = server.add_player(name, map_id)
     position, _, _ = get_parsed_state(server, token, player_id)
     game_server.join(name, map_id, token, player_id, Point(position[0], position[1]))
     return token, player_id
-
-
-def join_to_map(server, user_name, map_id):
-    request = 'api/v1/game/join'
-    header = {'content-type': 'application/json'}
-    data = {"userName": user_name, "mapId": map_id}
-    return server.request('POST', header, request, json=data)
 
 
 def test_tick_miss_delta(server_one_test):
@@ -159,14 +109,14 @@ def test_tick_success(server_one_test, delta: int):
 
 def test_match_roads(server, game_server):
     py_maps = game_server.get_maps()
-    server_maps = get_maps(server)
+    server_maps = server.get_maps()
 
     assert py_maps == server_maps
     for i in range(0, len(py_maps)):
         py_map = game_server.get_map(py_maps[i]['id'])
         if 'dogSpeed' in py_map.keys():
             py_map.pop('dogSpeed')
-        server_map = get_map(server, server_maps[i]['id'])
+        server_map = server.get_map(server_maps[i]['id'])
         assert py_map == server_map
 
 
