@@ -131,13 +131,17 @@ class Server:
             if res.headers['cache-control'] != 'no-cache':
                 raise WrongHeaders(f'Wrong Cache-Control header: '
                                    f'"{res.headers["cache-control"]}" instead of "no-cache"')
+            if res.request.method != 'HEAD':
+                if int(res.headers['content-length']) != len(res.content):
+                    raise WrongHeaders(f'Wrong content length: '
+                                       f'"{res.headers["content-length"]}" instead of "{len(res.content)}"')
+            else:
+                if res.headers['content-length'] != 0:
+                    raise WrongHeaders(f'Wrong content length: '
+                                       f'"{res.headers["content-length"]}" instead of "0" for HEAD request')
         except KeyError as ke:
             raise WrongHeaders(f'Wrong response headers: missing "{ke.args[0]}". Headers: {res.headers}')
 
-        if res.request.method != 'HEAD':
-            if int(res.headers['content-length']) != len(res.content):
-                raise WrongHeaders(f'Wrong content length: '
-                                   f'{res.headers["content-length"]} instead of {len(res.content)}')
         try:
             res.json()
         except json.decoder.JSONDecodeError as je:
