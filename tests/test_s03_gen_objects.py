@@ -23,9 +23,9 @@ def test_map_invalid_verb(server, method, map_dict):
 
 @pytest.mark.parametrize('method', ['GET', 'HEAD'])
 @pytest.mark.randomize(min_length=1, max_length=15, str_attrs=('digits', 'ascii_letters'), ncalls=3)
-def test_map_not_found(server, method, map_id: str):
+def test_map_not_found(server, method, map_id_bad: str):
     header = {}
-    request = f'api/v1/maps/__{map_id}'
+    request = f'api/v1/maps/__{map_id_bad}'
     res = server.request(method, header, f'/{request}')
 
     assert res.status_code == 404
