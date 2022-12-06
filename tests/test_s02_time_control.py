@@ -20,7 +20,7 @@ def get_states(server, game_server: game.GameServer, token):
 
 
 def get_parsed_state(server, token, player_id):
-    state: dict = server.get_state(token, player_id)
+    state: dict = server.get_player_state(token, player_id)
     pos = state.get('pos')
     speed = state.get('speed')
     direction = state.get('dir')
