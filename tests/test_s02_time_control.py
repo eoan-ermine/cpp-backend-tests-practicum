@@ -4,7 +4,7 @@ import pytest
 import pathlib
 
 import game_server as game
-from game_server import Point, Direction
+from game_server import Point, Vector2D, Direction
 
 
 @pytest.fixture()
@@ -85,6 +85,20 @@ def add_player(server, game_server, map_id, name):
     position, _, _ = get_parsed_state(server, token, player_id)
     game_server.join(name, map_id, token, player_id, Point(position[0], position[1]))
     return token, player_id
+
+
+def compare_states(cpp_state: dict, py_state: dict):
+    cpp_players: dict = cpp_state['players']
+    py_players: dict = py_state['players']
+    assert cpp_players.keys() == py_players.keys()
+
+    for player_id in cpp_players:
+        cpp_player: dict = cpp_players[player_id]
+        py_player: dict = py_players[player_id]
+
+        assert Point(*cpp_player['pos']) == Point(*py_player['pos'])
+        assert Vector2D(*cpp_player['speed']) == Vector2D(*py_player['speed'])
+        assert cpp_player['dir'] == py_player['dir']
 
 
 def join_to_map(server, user_name, map_id):
@@ -176,7 +190,7 @@ def test_turn_one_player(server_one_test, game_server, direction, map_id):
     move_players(server_one_test, game_server, token, direction)
     state, py_state = get_states(server_one_test, game_server, token)
 
-    assert py_state == state
+    compare_states(state, py_state)
 
 
 @pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
@@ -186,14 +200,14 @@ def test_small_move_one_player(server_one_test, game_server, direction, ticks: i
     move_players(server_one_test, game_server, token, direction)
     state, py_state = get_states(server_one_test, game_server, token)
 
-    assert py_state == state
+    compare_states(state, py_state)
 
     tick_both(server_one_test, game_server, ticks)
     state, py_state = get_states(server_one_test, game_server, token)
     print(py_state)
     print(state)
 
-    assert py_state == state
+    compare_states(state, py_state)
 
 
 @pytest.mark.randomize(min_num=1000, max_num=100000, ncalls=3)
@@ -203,14 +217,14 @@ def test_big_move_one_player(server_one_test, game_server, direction, ticks: int
     move_players(server_one_test, game_server, token, direction)
     state, py_state = get_states(server_one_test, game_server, token)
 
-    assert py_state == state
+    compare_states(state, py_state)
 
     tick_both(server_one_test, game_server, ticks)
     state, py_state = get_states(server_one_test, game_server, token)
     print(py_state)
     print(state)
 
-    assert py_state == state
+    compare_states(state, py_state)
 
 
 def test_move_sequence_one_player(server_one_test, game_server, map_id):
@@ -240,7 +254,7 @@ def test_move_sequence_one_player(server_one_test, game_server, map_id):
         print('Server:', state)
         print('PyServer:', py_state)
 
-        assert state == py_state
+        compare_states(state, py_state)
 
 
 @pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
@@ -255,8 +269,8 @@ def test_two_players_turns(server_one_test, game_server, direction_1, direction_
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
-    assert state_1 == py_state_1
-    assert state_2 == py_state_2
+    compare_states(state_1, py_state_1)
+    compare_states(state_2, py_state_2)
 
 
 @pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
@@ -266,8 +280,8 @@ def test_two_players_small_move(server_one_test, game_server, map_id, ticks: int
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
-    assert state_1 == py_state_1
-    assert state_2 == py_state_2
+    compare_states(state_1, py_state_1)
+    compare_states(state_2, py_state_2)
 
     direction_1 = Direction.random_str()
     move_players(server_one_test, game_server, token_1, direction_1)
@@ -280,8 +294,8 @@ def test_two_players_small_move(server_one_test, game_server, map_id, ticks: int
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
-    assert state_1 == py_state_1
-    assert state_2 == py_state_2
+    compare_states(state_1, py_state_1)
+    compare_states(state_2, py_state_2)
 
 
 @pytest.mark.randomize(min_num=250, max_num=10000, ncalls=3)
@@ -291,8 +305,8 @@ def test_two_players_big_move(server_one_test, game_server, map_id, ticks: int):
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
-    assert state_1 == py_state_1
-    assert state_2 == py_state_2
+    compare_states(state_1, py_state_1)
+    compare_states(state_2, py_state_2)
 
     direction_1 = Direction.random_str()
     move_players(server_one_test, game_server, token_1, direction_1)
@@ -304,8 +318,8 @@ def test_two_players_big_move(server_one_test, game_server, map_id, ticks: int):
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
-    assert state_1 == py_state_1
-    assert state_2 == py_state_2
+    compare_states(state_1, py_state_1)
+    compare_states(state_2, py_state_2)
 
 
 def test_two_players_sequences(server_one_test, game_server, map_id):
@@ -314,8 +328,8 @@ def test_two_players_sequences(server_one_test, game_server, map_id):
     state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
     state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
-    assert state_1 == py_state_1
-    assert state_2 == py_state_2
+    compare_states(state_1, py_state_1)
+    compare_states(state_2, py_state_2)
 
     for _ in range(0, 10):
         direction_1 = Direction.random_str()
@@ -330,5 +344,5 @@ def test_two_players_sequences(server_one_test, game_server, map_id):
         state_1, py_state_1 = get_states(server_one_test, game_server, token_1)
         state_2, py_state_2 = get_states(server_one_test, game_server, token_2)
 
-        assert state_1 == py_state_1
-        assert state_2 == py_state_2
+        compare_states(state_1, py_state_1)
+        compare_states(state_2, py_state_2)

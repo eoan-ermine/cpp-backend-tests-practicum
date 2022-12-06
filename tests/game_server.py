@@ -51,6 +51,9 @@ class Point:
     def __str__(self) -> str:
         return f'[{self.x:.1f}, {self.y:.1f}]'
 
+    def __eq__(self, other: Point):
+        return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
+
     def to_list(self):
         return [self.x, self.y]
 
