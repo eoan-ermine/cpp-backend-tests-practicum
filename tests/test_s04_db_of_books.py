@@ -17,7 +17,7 @@ def get_connection(db_name):
     return psycopg2.connect(user=os.environ['POSTGRES_USER'],
                             password=os.environ['POSTGRES_PASSWORD'],
                             host=os.environ['POSTGRES_HOST'],
-                            port=os.environ['POSTGRES_POST'],
+                            port=os.environ['POSTGRES_PORT'],
                             dbname=db_name,
                             cursor_factory=DictCursor,
                             )
@@ -58,7 +58,7 @@ def run_book_manager(db_name, terminate=True):
         self.terminate()
         self.wait(timeout=0.2)
 
-    db_connect = f"postgres://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}@{os.environ['POSTGRES_HOST']}:{os.environ['POSTGRES_POST']}/{db_name}"
+    db_connect = f"postgres://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}@{os.environ['POSTGRES_HOST']}:{os.environ['POSTGRES_PORT']}/{db_name}"
     proc = subprocess.Popen([os.environ['DELIVERY_APP'], db_connect], text=True,
                             stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     proc.write = types.MethodType(_write, proc)
