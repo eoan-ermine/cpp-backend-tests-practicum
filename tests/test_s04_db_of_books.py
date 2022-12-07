@@ -128,7 +128,7 @@ def test_exit(db_name):
         cmd = create_exit_command()
 
         book_manager.write(json.dumps(cmd))
-        time.sleep(0.2)
+        time.sleep(0.5)
         assert book_manager.poll() is not None
 
 
