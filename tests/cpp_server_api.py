@@ -4,11 +4,11 @@ import requests
 
 from urllib.parse import urljoin
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union, Type, KeysView, Any
 
 
 class ServerException(Exception):
-    def __init__(self, message, data):
+    def __init__(self, message: str, data: Any):
         super().__init__()
         self.__message = message
         self.__data = data
@@ -41,7 +41,7 @@ class UnexpectedData(DataInconsistency):
     One of the field is missing
     """
 
-    def __init__(self, parent_object, expected, given):
+    def __init__(self, parent_object: str, expected: Any, given: Any):
         super().__init__(f"{parent_object} has unexpected data",
                          {'expected': expected, 'given': given})
         self.__parent_object = parent_object
@@ -88,9 +88,13 @@ class WrongFields(UnexpectedData):
 class WrongType(DataInconsistency):
     """
     """
-    def __init__(self, parent_object, expected_type: type, given_type: type):
+    def __init__(self, parent_object: str, expected_type: Union[Type, List[Type]], given_type: Type):
+
+        expected_type = [t.__name__ for t in list(expected_type)]
+
         super().__init__(f"{parent_object} has wrong fields",
-                         {'expected type': expected_type.__name__, 'given type': given_type.__name__})
+                         {'expected type': expected_type, 'given type': given_type.__name__})
+
         self.__parent_object = parent_object
         self.__expected_type = expected_type
         self.__given_type = given_type
@@ -116,7 +120,7 @@ class WrongType(DataInconsistency):
         return self.__given_type
 
     def __str__(self):
-        return f"{self.parent_object} has wrong type:\n{json.dumps(self.expected_type.__name__)} was expected, " \
+        return f"{self.parent_object} has wrong type:\n{json.dumps(self.expected_type)} was expected, " \
                f"but it's {json.dumps(self.given_type.__name__)}"
 
 
@@ -180,11 +184,12 @@ class CppServer:
         self.validate_response(res)
         res_json: List[dict] = res.json()
 
-        if type(res_json) != list:
-            raise WrongType('Map list', list, type(res_json))
+        CppServer.assert_type('Map list', list, res_json)
+
         for m in res_json:
-            if set(m.keys()) == {'id', 'name'}:
-                raise WrongFields('Map', ['id', 'name'], list(m.keys()))
+            CppServer.assert_fields('Map', ['id', 'name'], m.keys())
+            CppServer.assert_type('Map id', str, m['id'])
+            CppServer.assert_type('Map name', str, m['name'])
 
         return res_json
 
@@ -202,15 +207,13 @@ class CppServer:
         res = self.request('POST', header, request, json=data)
         res_json: dict = res.json()
 
-        if res_json.keys() != {'authToken', 'playerId'}:
-            raise WrongFields('Join game response', ['authToken', 'playerId'], list(res_json.keys()))
+        CppServer.assert_fields('Join game response', ['authToken', 'playerId'], res_json.keys())
 
         token = res_json['authToken']
         self.validate_token(token)
 
         player_id = res_json['playerId']
-        if type(player_id) != int:
-            raise WrongType('Player id', int, type(player_id))
+        CppServer.assert_type('Player id', int, player_id)
 
         return token, player_id
 
@@ -226,8 +229,9 @@ class CppServer:
 
         res = self.request('GET', header, request)
         self.validate_response(res)
-
-        return res.json()
+        res_json = res.json()
+        self.validate_state(res_json)
+        return res_json
 
     def get_player_state(self, token: str, player_id: int) -> Optional[dict]:
         game_session_state = self.get_state(token)
@@ -257,6 +261,19 @@ class CppServer:
         data = {"timeDelta": ticks}
         res = self.request('POST', header, request, json=data)
         self.validate_response(res)
+
+    @staticmethod
+    def assert_type(obj_name: str, expected_types: Union[Type, List[Type]], obj: any):
+        if type(expected_types) not in {list, tuple, set}:
+            expected_types = [expected_types]
+        if type(obj) not in expected_types:
+            raise WrongType(obj_name, expected_types, type(obj))
+
+    @staticmethod
+    def assert_fields(object_name, expected_keys: Union[list, str, KeysView], given_keys: KeysView):
+        for key in list(expected_keys):
+            if key not in given_keys:
+                raise WrongFields(object_name, list(expected_keys), list(given_keys))
 
     # Wil be rewritten soon
     @staticmethod
@@ -290,33 +307,63 @@ class CppServer:
     def validate_map(m: dict):
         expected = {'id': str, 'name': str, 'roads': list, 'buildings': list, 'offices': list}
 
-        for key in expected.keys():
-            if key not in m.keys():
-                raise WrongFields('Map', list(expected.keys()), list(m.keys()))
+        CppServer.assert_fields('Map', expected.keys(), m.keys())
 
-            if type(m[key]) != expected[key]:
-                raise WrongType(f'Map {key}', expected[key], type(m[key]))
+        for key in expected.keys():
+            CppServer.assert_type(key, expected[key], m[key])
 
         extra = {'dogSpeed': float}
 
         for key in extra:
             if key in m.keys():
-                if type(m[key]) != extra[key]:
-                    raise WrongType(f'Map {key}', extra[key], type(m[key]))
+                CppServer.assert_type(key, extra[key], m[key])
+
+        dog_speed = m.get('dogSpeed')
+        if dog_speed is not None:
+            if dog_speed < 0:
+                raise DataInconsistency('Dog speed can\'t be negative', {'dog speed': dog_speed})
 
         for road in m['roads']:
             road: dict
-            if type(road) != dict:
-                raise WrongType('Road', dict, type(road))
+            CppServer.assert_type('Road', dict, type(road))
 
             if road.keys() != {'x0', 'y0', 'x1'} and road.keys() != {'x0', 'y0', 'y1'}:
                 raise WrongFields('Road', '["x0", "y0", "x1"] or ["x0", "y0", "y1"]', list(road.keys()))
+
             for coordinate in road:
-                if type(road[coordinate]) not in {float, int}:
-                    raise WrongType(f"Road coordinate {coordinate}", float, type(road[coordinate]))
+                CppServer.assert_type(f'Road coordinate {coordinate}', [float, int], coordinate)
 
         # Same for office and buildings if it's fine
 
     @staticmethod
     def validate_token(token: str):
         pass
+
+    @staticmethod
+    def validate_state(res_json: dict):
+        print(res_json)
+        CppServer.assert_type('Game state', dict, res_json)
+
+        players = res_json.get('players')
+        CppServer.assert_type('Game state, players', dict, players)
+        for player_id in players:
+            CppServer.assert_type('Player id', [str, int], player_id)
+
+            player: dict = players[player_id]
+
+            CppServer.assert_type('player_id', dict, player)
+
+            expected = {'pos': list, 'speed': list, 'dir': str}
+            for key in expected:
+                CppServer.assert_fields(f'Player {player_id} state', expected.keys(), player.keys())
+                CppServer.assert_type(key, expected[key], player[key])
+
+            for coordinate in player['pos']:
+                CppServer.assert_type('Player position', float, coordinate)
+            for coordinate in player['speed']:
+                CppServer.assert_type('Player speed', float, coordinate)
+
+            CppServer.assert_type('Player direction', str, player['dir'])
+            expected_dirs = ['R', 'L', 'U', 'D', '']
+            if player['dir'] not in expected_dirs:
+                raise UnexpectedData('Player direction', ['R', 'L', 'U', 'D', ''], player['dir'])

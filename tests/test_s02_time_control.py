@@ -180,7 +180,7 @@ def test_big_move_one_player(server_one_test, game_server, direction, ticks: int
 def test_move_sequence_one_player(server_one_test, game_server, map_id):
     token, _ = add_player(server_one_test, game_server, map_id, 'player')
 
-    # commented lines - forced test (with particular random seed) to break due to a wierd bug in the c++ solution
+    # commented lines - forces test (with particular random seed) to break due to a wierd bug in the c++ solution
     # uncommented lines doesn't break the test,
     # because they have a slightly different mechanism to get a random direction
     # uncomment this to break the test:
