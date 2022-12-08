@@ -235,16 +235,20 @@ class CppServer:
 
     def get_player_state(self, token: str, player_id: int) -> Optional[dict]:
         game_session_state = self.get_state(token)
+
+        self.assert_type('Game session state', dict, game_session_state)
+        self.assert_fields('Game session state', 'players', game_session_state.keys())
+
         players = game_session_state.get('players')
 
-        try:
-            state = players[str(player_id)]
-        except KeyError:
-            raise BadResponse(f'The given game session state doesn\'t '
-                              f'have the desired player id "{player_id}": {players}')
-        except AttributeError:
-            raise BadResponse(f'The given game session state doesn\'t '
-                              f'appear to have "players" field: {game_session_state}')
+        self.assert_type('Players state', dict, players)
+        state = players.get(str(player_id))
+
+        if state is None:
+            raise DataInconsistency('Game state doesn\'t have the given player id',
+                                    {'player_id': players, 'game_state': game_session_state})
+
+        self.validate_state(state)
 
         return state
 
@@ -279,32 +283,35 @@ class CppServer:
     @staticmethod
     def validate_response(res: requests.Response):
         if res.status_code != 200:
-            raise WrongCode(f'Status code isn\'t OK: 200 != {res.status_code}')
-        try:
-            if res.headers['content-type'] != 'application/json':
-                raise WrongHeaders(f'Wrong Content-Type header: '   # Should it be split into four different exceptions?
-                                   f'"{res.headers["content-type"]}" instead of "application/json"')
-            if res.headers['cache-control'] != 'no-cache':
-                raise WrongHeaders(f'Wrong Cache-Control header: '
-                                   f'"{res.headers["cache-control"]}" instead of "no-cache"')
-            if res.request.method != 'HEAD':
-                if int(res.headers['content-length']) != len(res.content):
-                    raise WrongHeaders(f'Wrong content length: '
-                                       f'"{res.headers["content-length"]}" instead of "{len(res.content)}"')
-            else:
-                if res.headers['content-length'] != 0:
-                    raise WrongHeaders(f'Wrong content length: '
-                                       f'"{res.headers["content-length"]}" instead of "0" for HEAD request')
-        except KeyError as ke:
-            raise WrongHeaders(f'Wrong response headers: missing "{ke.args[0]}". Headers: {res.headers}')
+            raise BadRequest('Status code isn\'t OK', {'status code': res.status_code, 'response': res.content})
+
+        CppServer.assert_fields('Response headers',
+                                ['content-type', 'cache-control', 'content-length'],
+                                res.headers.keys())
+
+        if res.headers['content-type'] != 'application/json':
+            raise UnexpectedData('Content-type', 'application/json', res.headers['content-type'])
+
+        if res.headers['cache-control'] != 'no-cache':
+            raise UnexpectedData('Cache-control', 'no-cache', res.headers['cache-control'])
+
+        if res.request.method != 'HEAD':
+            if int(res.headers['content-length']) != len(res.content):
+                raise UnexpectedData('Headers\' content-length', len(res.content), int(res.headers['content-length']))
+        else:
+            if res.headers['content-length'] != 0:
+                raise UnexpectedData('Headers\' content-length for head request should be zero',
+                                     0, int(res.headers['content-length']))
 
         try:
             res.json()
         except json.decoder.JSONDecodeError as je:
-            raise BadlyEncodedJson(msg=je.msg, doc=je.doc, pos=je.pos)
+            raise DataInconsistency('The response has badly encoded JSON',
+                                    {'response content': res.content, 'JSON decoder error': [je.msg, je.doc, je.pos]})
 
     @staticmethod
     def validate_map(m: dict):
+        print(m)
         expected = {'id': str, 'name': str, 'roads': list, 'buildings': list, 'offices': list}
 
         CppServer.assert_fields('Map', expected.keys(), m.keys())
@@ -325,19 +332,44 @@ class CppServer:
 
         for road in m['roads']:
             road: dict
-            CppServer.assert_type('Road', dict, type(road))
+            CppServer.assert_type('Road', dict, road)
 
             if road.keys() != {'x0', 'y0', 'x1'} and road.keys() != {'x0', 'y0', 'y1'}:
                 raise WrongFields('Road', '["x0", "y0", "x1"] or ["x0", "y0", "y1"]', list(road.keys()))
 
             for coordinate in road:
-                CppServer.assert_type(f'Road coordinate {coordinate}', [float, int], coordinate)
+                CppServer.assert_type(f'Road coordinate {coordinate}', [float, int], road[coordinate])
 
-        # Same for office and buildings if it's fine
+        for building in m['buildings']:
+            building: dict
+
+            CppServer.assert_type('Building on the map', dict, building)
+            CppServer.assert_fields('Building on the map', ['x', 'y', 'w', 'h'], building.keys())
+
+            for field in building:
+                CppServer.assert_type(f'Building field {field}', [float, int], building[field])
+                if field in ['w', 'h']:
+                    if building[field] <= 0:
+                        raise DataInconsistency('Building size is\'t positive', {'building': building})
+
+        for office in m['offices']:
+            office: dict
+            CppServer.assert_type('Office', dict, office)
+
+            expected = {'id': str, 'x': [float, int], 'y': [float, int],
+                        'offsetX': [float, int], 'offsetY': [float, int]}
+
+            CppServer.assert_fields('Office on the map', expected.keys(), office.keys())
+
+            for field in expected:
+                CppServer.assert_type(f'Office field {field}', expected[field], office[field])
 
     @staticmethod
     def validate_token(token: str):
-        pass
+        try:
+            int(token, 16)
+        except ValueError:
+            raise DataInconsistency('Token is invalid, it should be a hex value', {'token': token})
 
     @staticmethod
     def validate_state(res_json: dict):
