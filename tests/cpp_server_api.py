@@ -130,27 +130,6 @@ class BadRequest(ServerException):
     """
 
 
-"""
-Нижеследующие уберу, пока ещё сидят тут, посколько на них ссылаются куски кода, которые ещё не переделал
-"""
-
-
-class WrongHeaders(ValueError, KeyError):
-    """Header doesn't have proper content-type, cache-control, or/and content-length"""
-
-
-class WrongCode(ValueError):
-    """The responses status code is wrong"""
-
-
-class BadlyEncodedJson(json.decoder.JSONDecodeError):
-    """The content isn't encoded right"""
-
-
-class BadResponse(ValueError):
-    """The content of the response doesn't match the expected structure or values"""
-
-
 class CppServer:
 
     def __init__(self, url: str, output: Optional[Path] = None):
