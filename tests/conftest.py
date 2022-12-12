@@ -8,32 +8,9 @@ from xprocess import ProcessStarter
 from urllib.parse import urljoin
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Set, Optional
+from typing import Set, Optional, Tuple
 
-
-class Server:
-
-    def __init__(self, url: str, output: Optional[Path] = None):
-        self.url = url
-        if output:
-            self.file = open(output)
-
-    def get_line(self):
-        return self.file.readline()
-
-    def get_log(self):
-        return json.loads(self.get_line())
-
-    def request(self, method, header, url, **kwargs):
-        req = requests.Request(method, urljoin(self.url, url), headers=header, **kwargs).prepare()
-        with requests.Session() as session:
-            return session.send(req)
-
-    def get(self, endpoint):
-        return requests.get(urljoin(self.url, endpoint))
-
-    def post(self, endpoint, data):
-        return requests.post(urljoin(self.url, endpoint), data)
+from cpp_server_api import CppServer as Server
 
 
 def get_maps_from_config_file(config: Path):

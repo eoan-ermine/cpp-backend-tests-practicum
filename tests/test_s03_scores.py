@@ -6,6 +6,7 @@ import conftest as utils
 
 defaultBagCapacity = 3
 
+
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
 def test_map_invalid_verb(server, method, map_dict):
     map_id = map_dict['id']
