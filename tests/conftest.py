@@ -10,31 +10,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from typing import Set, Optional, Tuple
 
-from cpp_server_api import CppServer
-
-class Server_0:
-
-    def __init__(self, url: str, output: Optional[Path] = None):
-        self.url = url
-        if output:
-            self.file = open(output)
-
-    def get_line(self):
-        return self.file.readline()
-
-    def get_log(self):
-        return json.loads(self.get_line())
-
-    def request(self, method, header, url, **kwargs):
-        req = requests.Request(method, urljoin(self.url, url), headers=header, **kwargs).prepare()
-        with requests.Session() as session:
-            return session.send(req)
-
-    def get(self, endpoint):
-        return requests.get(urljoin(self.url, endpoint))
-
-    def post(self, endpoint, data):
-        return requests.post(urljoin(self.url, endpoint), data)
+from cpp_server_api import CppServer as Server
 
 
 def get_maps_from_config_file(config: Path):
@@ -90,7 +66,7 @@ def _make_server(xprocess):
 
     _, output_path = xprocess.ensure("server", Starter)
 
-    yield CppServer(f'http://{server_domain}:{server_port}/', output_path)
+    yield Server(f'http://{server_domain}:{server_port}/', output_path)
 
     xprocess.getinfo("server").terminate()
 

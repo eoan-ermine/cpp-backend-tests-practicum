@@ -6,6 +6,7 @@ import conftest as utils
 
 defaultBagCapacity = 3
 
+
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
 def test_map_invalid_verb(server, method, map_dict):
     map_id = map_dict['id']
@@ -25,9 +26,9 @@ def test_map_invalid_verb(server, method, map_dict):
 
 @pytest.mark.parametrize('method', ['GET', 'HEAD'])
 @pytest.mark.randomize(min_length=1, max_length=15, str_attrs=('digits', 'ascii_letters'), ncalls=3)
-def test_map_not_found(server, method, map_id: str):
+def test_map_not_found(server, method, random_map_id: str):
     header = {}
-    request = f'api/v1/maps/__{map_id}'
+    request = f'api/v1/maps/__{random_map_id}'
     res = server.request(method, header, f'/{request}')
 
     assert res.status_code == 404

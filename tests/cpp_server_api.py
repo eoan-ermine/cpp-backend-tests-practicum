@@ -227,7 +227,7 @@ class CppServer:
             raise DataInconsistency('Game state doesn\'t have the given player id',
                                     {'player_id': players, 'game_state': game_session_state})
 
-        self.validate_state(state)
+        self.validate_player_state(state)
 
         return state
 
@@ -254,7 +254,12 @@ class CppServer:
 
     @staticmethod
     def assert_fields(object_name, expected_keys: Union[list, str, KeysView], given_keys: KeysView):
-        for key in list(expected_keys):
+        if type(expected_keys) == str:
+            expected_keys = [expected_keys]
+        else:
+            expected_keys = list(expected_keys)
+
+        for key in expected_keys:
             if key not in given_keys:
                 raise WrongFields(object_name, list(expected_keys), list(given_keys))
 
@@ -354,27 +359,31 @@ class CppServer:
     def validate_state(res_json: dict):
         print(res_json)
         CppServer.assert_type('Game state', dict, res_json)
-
         players = res_json.get('players')
+        print('players', players)
         CppServer.assert_type('Game state, players', dict, players)
         for player_id in players:
             CppServer.assert_type('Player id', [str, int], player_id)
-
             player: dict = players[player_id]
 
-            CppServer.assert_type('player_id', dict, player)
+            CppServer.validate_player_state(player)
 
-            expected = {'pos': list, 'speed': list, 'dir': str}
-            for key in expected:
-                CppServer.assert_fields(f'Player {player_id} state', expected.keys(), player.keys())
-                CppServer.assert_type(key, expected[key], player[key])
+    @staticmethod
+    def validate_player_state(state: dict):
 
-            for coordinate in player['pos']:
-                CppServer.assert_type('Player position', float, coordinate)
-            for coordinate in player['speed']:
-                CppServer.assert_type('Player speed', float, coordinate)
+        CppServer.assert_type('player_id', dict, state)
 
-            CppServer.assert_type('Player direction', str, player['dir'])
-            expected_dirs = ['R', 'L', 'U', 'D', '']
-            if player['dir'] not in expected_dirs:
-                raise UnexpectedData('Player direction', ['R', 'L', 'U', 'D', ''], player['dir'])
+        expected = {'pos': list, 'speed': list, 'dir': str}
+        for key in expected:
+            CppServer.assert_fields(f'Player state', expected.keys(), state.keys())
+            CppServer.assert_type(key, expected[key], state[key])
+
+        for coordinate in state['pos']:
+            CppServer.assert_type('Player position', float, coordinate)
+        for coordinate in state['speed']:
+            CppServer.assert_type('Player speed', float, coordinate)
+
+        CppServer.assert_type('Player direction', str, state['dir'])
+        expected_dirs = ['R', 'L', 'U', 'D', '']
+        if state['dir'] not in expected_dirs:
+            raise UnexpectedData('Player direction', ['R', 'L', 'U', 'D', ''], state['dir'])
