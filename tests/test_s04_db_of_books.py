@@ -64,9 +64,11 @@ def run_book_manager(db_name, terminate=True):
     proc.write = types.MethodType(_write, proc)
     proc.read = types.MethodType(_read, proc)
     proc.new_terminate = types.MethodType(_terminate, proc)
-    yield proc
-    if terminate:
-        proc.new_terminate()
+    try:
+        yield proc
+    finally:
+        if terminate:
+            proc.new_terminate()
 
 
 def create_add_book_command(title: str, author: str, year: int, isbn: Optional[str]) -> dict:
