@@ -19,6 +19,8 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 random.seed(42)
 
+# TODO: Replace all time.sleep
+
 
 def get_connection(db_name):
     return psycopg2.connect(user=os.environ['POSTGRES_USER'],
@@ -30,10 +32,12 @@ def get_connection(db_name):
                             )
 
 
-def to_str(authors):
-    # if not authors:
-    #     return []
+def authors_to_str(authors):
     return [f'{i+1} {author["name"]}'.strip() for i, author in enumerate(authors)]
+
+
+def books_to_str(books):
+    return [f'{i+1} {book["title"]}, {book["publication_year"]}'.strip() for i, book in enumerate(books)]
 
 
 def get_authors(db_name):
@@ -47,7 +51,7 @@ def get_books(db_name):
     with get_connection(db_name) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id, title, author_id, publication_year FROM books ORDER BY title;")
-            return [f'{i+1} {book["title"]}, {book["publication_year"]}'.strip() for i, book in enumerate(cur.fetchall())]
+            return cur.fetchall()
 
 
 def get_author_books(db_name, author_id):
@@ -67,6 +71,13 @@ class Bookypedia:
     def random_chooser(authors):
         index = random.randint(0, len(authors)-1)
         return index+1, authors[index]
+
+    @staticmethod
+    def index_chooser(index: int):
+        def chooser(authors):
+            return index+1, authors[index]
+        return chooser
+
 
     def _wait_select(self, timeout=0.2):
         delta = timeout/100
@@ -130,10 +141,10 @@ class Bookypedia:
         return self._wait_strings()
 
 
-@pytest.fixture(scope='function', params=['empty_db', 'table_db', 'full_db'])
-def bookypedia(request):
-    with run_bookypedia(request.param) as result:
-        yield result
+# @pytest.fixture(scope='function', params=['empty_db', 'table_db', 'full_db'])
+# def bookypedia(request):
+#     with run_bookypedia(request.param) as result:
+#         yield result
 
 
 @contextmanager
@@ -158,8 +169,8 @@ def run_bookypedia(db_name, terminate=True, reset_db=True):
         pass
 
     db_connect = f"postgres://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}@{os.environ['POSTGRES_HOST']}:{os.environ['POSTGRES_PORT']}/{db_name}"
-    os.environ['BOOKYPEDIA_DB_URL'] = db_connect
-    proc = subprocess.Popen(os.environ['DELIVERY_APP'].split(), text=True,
+    # os.environ['BOOKYPEDIA_DB_URL'] = db_connect
+    proc = subprocess.Popen(os.environ['DELIVERY_APP'].split(), text=True, env=dict(os.environ, BOOKYPEDIA_DB_URL=db_connect),
                             stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     os.set_blocking(proc.stdout.fileno(), False)
     proc.write = types.MethodType(_write, proc)
@@ -177,27 +188,27 @@ def run_bookypedia(db_name, terminate=True, reset_db=True):
 def test_add_author(db_name):
     with run_bookypedia(db_name) as bookypedia:
         if db_name != 'full_db':
-            # assert bookypedia.add_author(None) == 'Failed to add author'
+            assert bookypedia.add_author(None).startswith('Failed to add author')
             assert bookypedia.add_author('author2') is None
             assert bookypedia.add_author('author1') is None
-            assert bookypedia.add_author('author2') == 'Failed to add author'
+            assert bookypedia.add_author('author2').startswith('Failed to add author')
         else:
-            # assert bookypedia.add_author(None) == 'Failed to add author'
-            assert bookypedia.add_author('author2') == 'Failed to add author'
-            assert bookypedia.add_author('author1') == 'Failed to add author'
-            assert bookypedia.add_author('author2') == 'Failed to add author'
+            assert bookypedia.add_author(None).startswith('Failed to add author')
+            assert bookypedia.add_author('author2').startswith('Failed to add author')
+            assert bookypedia.add_author('author1').startswith('Failed to add author')
+            assert bookypedia.add_author('author2').startswith('Failed to add author')
 
 
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_show_authors(db_name):
     with run_bookypedia(db_name) as bookypedia:
-        assert bookypedia.show_authors() == to_str(get_authors(db_name))
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
 
         bookypedia.add_author('author3')
         bookypedia.add_author('author2')
         bookypedia.add_author('author1')
 
-        assert bookypedia.show_authors() == to_str(get_authors(db_name))
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
 
 
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
@@ -215,35 +226,30 @@ def test_add_book(db_name):
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_show_author_books(db_name):
     with run_bookypedia(db_name) as bookypedia:
-
-        def create_chooser(index: int):
-            def chooser(authors):
-                return index+1, authors[index]
-            return chooser
         bookypedia.show_books()
         authors = get_authors(db_name)
         for i in range(len(authors)):
-            books = bookypedia.show_author_books(create_chooser(i))
+            books = bookypedia.show_author_books(Bookypedia.index_chooser(i))
             assert books == get_author_books(db_name, authors[i]['id'])
 
         bookypedia.add_author('author3')
         bookypedia.add_author('author2')
         bookypedia.add_author('author1')
 
-        bookypedia.add_book(1111, 'Title1', create_chooser(0))
-        bookypedia.add_book(222, 'Title2', create_chooser(0))
-        bookypedia.add_book(33, 'Title3', create_chooser(1))
+        bookypedia.add_book(1111, 'Title1', Bookypedia.index_chooser(0))
+        bookypedia.add_book(222, 'Title2', Bookypedia.index_chooser(0))
+        bookypedia.add_book(33, 'Title3', Bookypedia.index_chooser(1))
 
         authors = get_authors(db_name)
         for i in range(len(authors)):
-            books = bookypedia.show_author_books(create_chooser(i))
+            books = bookypedia.show_author_books(Bookypedia.index_chooser(i))
             assert books == get_author_books(db_name, authors[i]['id'])
 
 
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_show_books(db_name):
     with run_bookypedia(db_name) as bookypedia:
-        assert bookypedia.show_books() == get_books(db_name)
+        assert bookypedia.show_books() == books_to_str(get_books(db_name))
 
         bookypedia.add_author('author3')
         bookypedia.add_author('author2')
@@ -253,7 +259,37 @@ def test_show_books(db_name):
         bookypedia.add_book(222, 'Book2')
         bookypedia.add_book(33, 'Book3')
 
-        assert bookypedia.show_books() == get_books(db_name)
+        assert bookypedia.show_books() == books_to_str(get_books(db_name))
+#
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_concurrency(db_name):
+    with run_bookypedia(db_name) as bookypedia1:
+        time.sleep(0.2)
+        with run_bookypedia(db_name, reset_db=False) as bookypedia2:
+            books = books_to_str(get_books(db_name))
+            assert bookypedia1.show_books() == books
+            assert bookypedia2.show_books() == books
+
+            bookypedia1.add_author('AAAA')  # insert to top on list
+
+            def create_chooser(index: int):
+                def chooser(authors):
+                    bookypedia2.add_author('A')  # insert to top on list
+                    time.sleep(0.2)
+                    return index+1, authors[index]
+                return chooser
+
+            bookypedia1.add_book(2022, '!Title', create_chooser(0))
+
+            authors = get_authors(db_name)
+            for i, author in enumerate(authors):
+                if author['name'] == 'AAAA':
+                    books = bookypedia1.show_author_books(Bookypedia.index_chooser(i))
+                    assert books == ['1 !Title, 2022']
+                if author['name'] == 'A':
+                    books = bookypedia1.show_author_books(Bookypedia.index_chooser(i))
+                    assert books == []
 
 
 def drop_db(db_name):
@@ -297,16 +333,16 @@ CREATE TABLE IF NOT EXISTS books (
             with conn.cursor() as cur:
                 query = f'INSERT INTO authors (id, name) VALUES (%s, %s);'
                 author_ids = []
-                for i in range(10):
+                for i in range(5):
                     _uuid = uuid.uuid4().hex
                     author_ids.append(_uuid)
                     cur.execute(query, (_uuid, f'author{i}'))
                 query = f'INSERT INTO books (id, title, author_id, publication_year) VALUES (%s, %s, %s, %s);'
-                for i in range(50):
+                for i in range(20):
                     cur.execute(query, (uuid.uuid4().hex, f'Title{i}', random.choice(author_ids), 1000+i))
 
 
 if __name__ == '__main__':
-    for db_name in ['empty_db', 'table_db', 'full_db']:
-        drop_db(db_name)
-        create_db(db_name)
+    for name in ['empty_db', 'table_db', 'full_db']:
+        drop_db(name)
+        create_db(name)
