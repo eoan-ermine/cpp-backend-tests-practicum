@@ -31,6 +31,6 @@ def get_records(server, start: int = 0, max_items: int = 100) -> list:
 
 
 def test_clean_records(server_one_test):
-    res_json = get_records(server_postgres)
+    res_json = get_records(server_one_test)
 
     assert len(res_json) == 0
