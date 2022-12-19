@@ -24,15 +24,27 @@ def get_connection(db_name):
                             )
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def recreate_db():
     conn = get_connection(None)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f'DROP DATABASE records --force')
+    except Exception:
+        raise
+
     with conn.cursor() as cur:
-        cur.execute(f'drop database if exists records --force')
         cur.execute(f'create database records')
 
     conn.close()
+
+
+if __name__ == '__main__':
+    conn = get_connection(None)
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    with conn.cursor() as cur:
+        cur.execute(f'create database records')
 
 
 def compare(records: List[dict], tribe_records: List[dict]):
@@ -147,12 +159,12 @@ def get_records(server, start: int = 0, max_items: int = 100) -> list:
     return res_json
 
 
-def test_clean_records(server_one_test, recreate_db):
+def test_clean_records(server_one_test):
     res_json = get_records(server_one_test)
     assert len(res_json) == 0
 
 
-def test_retirement_one_standing_player(server_one_test, map_id, recreate_db):
+def test_retirement_one_standing_player(server_one_test, map_id):
     token, player_id = server_one_test.join('Julius Can', map_id)
     r_time = get_retirement_time(server_one_test)
 
@@ -175,7 +187,7 @@ def test_retirement_one_standing_player(server_one_test, map_id, recreate_db):
     assert records[0] == {'name': 'Julius Can', 'score': 0, 'playTime': r_time}
 
 
-def test_retirement_one_player(server_one_test, map_id, recreate_db):
+def test_retirement_one_player(server_one_test, map_id):
     token, player_id = server_one_test.join('Julius Can', map_id)
     r_time = get_retirement_time(server_one_test)
 
@@ -205,7 +217,7 @@ def test_retirement_one_player(server_one_test, map_id, recreate_db):
     assert math.isclose(float(records[0]['score']), score)
 
 
-def test_a_few_zero_records(server_one_test, map_id, recreate_db):
+def test_a_few_zero_records(server_one_test, map_id):
 
     tribe = Tribe(server_one_test, map_id)
 
