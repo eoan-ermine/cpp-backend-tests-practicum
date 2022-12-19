@@ -30,7 +30,7 @@ def recreate_db():
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     try:
         with conn.cursor() as cur:
-            cur.execute(f'DROP DATABASE IF NOT EXISTS records --force')
+            cur.execute(f'DROP DATABASE IF EXISTS records --force')
     except Exception:
         raise
 
