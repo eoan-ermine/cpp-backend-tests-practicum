@@ -218,21 +218,3 @@ def test_a_few_zero_records(server_one_test, map_id):
     tribe_records = tribe.get_list()
     records = get_records(server_one_test)
     compare(records, tribe_records)
-
-
-# количество игроков, которых отправили на пенсию, не всегда равно кол-ву игроков, вышедших из игры
-@pytest.mark.skip
-def test_a_few_records(server_one_test, map_id):
-    tribe = Tribe(server_one_test, map_id)
-
-    r_time = get_retirement_time(server_one_test)
-
-    for _ in range(0, random.randint(100, 350)):
-        tribe.randomized_move()
-    tribe.update_scores()
-    tick_seconds(server_one_test, r_time)
-    tribe.add_time(r_time)
-
-    tribe_records = tribe.get_list()
-    records = get_records(server_one_test)
-    compare(records, tribe_records)
