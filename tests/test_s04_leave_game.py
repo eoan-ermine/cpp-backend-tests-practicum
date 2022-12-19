@@ -181,6 +181,8 @@ def test_retirement_one_player(server_one_test, map_id):
 
     server_one_test.get_state(token)  # To ensure that the game is joined, so the validation will be passed
 
+    random.seed(1011)
+
     for _ in range(100):
         direction = Direction.random_str()
         server_one_test.move(token, direction)
