@@ -295,7 +295,6 @@ class CppServer:
 
     @staticmethod
     def validate_map(m: dict):
-        print(m)
         expected = {'id': str, 'name': str, 'roads': list, 'buildings': list, 'offices': list}
 
         CppServer.assert_fields('Map', expected.keys(), m.keys())
@@ -357,10 +356,8 @@ class CppServer:
 
     @staticmethod
     def validate_state(res_json: dict):
-        print(res_json)
         CppServer.assert_type('Game state', dict, res_json)
         players = res_json.get('players')
-        print('players', players)
         CppServer.assert_type('Game state, players', dict, players)
         for player_id in players:
             CppServer.assert_type('Player id', [str, int], player_id)
