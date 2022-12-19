@@ -15,7 +15,7 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 
-def get_connection(db_name='hall_of_fame'):
+def get_connection(db_name):
     return psycopg2.connect(user=os.environ.get('POSTGRES_USER', 'postgres'),
                             password=os.environ.get('POSTGRES_PASSWORD', 'Mys3Cr3t'),
                             host=os.environ.get('POSTGRES_HOST', '172.17.0.2'),
@@ -24,7 +24,7 @@ def get_connection(db_name='hall_of_fame'):
                             )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def recreate_db():
     conn = get_connection(None)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
@@ -147,12 +147,12 @@ def get_records(server, start: int = 0, max_items: int = 100) -> list:
     return res_json
 
 
-def test_clean_records(server_one_test):
+def test_clean_records(server_one_test, recreate_db):
     res_json = get_records(server_one_test)
     assert len(res_json) == 0
 
 
-def test_retirement_one_standing_player(server_one_test, map_id):
+def test_retirement_one_standing_player(server_one_test, map_id, recreate_db):
     token, player_id = server_one_test.join('Julius Can', map_id)
     r_time = get_retirement_time(server_one_test)
 
@@ -175,7 +175,7 @@ def test_retirement_one_standing_player(server_one_test, map_id):
     assert records[0] == {'name': 'Julius Can', 'score': 0, 'playTime': r_time}
 
 
-def test_retirement_one_player(server_one_test, map_id):
+def test_retirement_one_player(server_one_test, map_id, recreate_db):
     token, player_id = server_one_test.join('Julius Can', map_id)
     r_time = get_retirement_time(server_one_test)
 
@@ -205,7 +205,7 @@ def test_retirement_one_player(server_one_test, map_id):
     assert math.isclose(float(records[0]['score']), score)
 
 
-def test_a_few_zero_records(server_one_test, map_id):
+def test_a_few_zero_records(server_one_test, map_id, recreate_db):
 
     tribe = Tribe(server_one_test, map_id)
 
