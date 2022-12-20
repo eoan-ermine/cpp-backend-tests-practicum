@@ -15,8 +15,6 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 from xprocess import ProcessStarter
-from urllib.parse import urljoin
-from pathlib import Path
 from contextlib import contextmanager
 
 
@@ -40,7 +38,7 @@ def _make_server(xprocess):
         args = commands
 
     _, output_path = xprocess.ensure("server", Starter)
-
+    xprocess.getinfo("server")
     yield CppServer(f'http://{server_domain}:{server_port}/', output_path)
 
     xprocess.getinfo("server").terminate()
@@ -53,7 +51,6 @@ def postgres_server(xprocess):
     with conn.cursor() as cur:
         cur.execute(f'DROP DATABASE IF EXISTS records --force')
         cur.execute(f'create database records')
-
     conn.close()
 
     with _make_server(xprocess) as result:
@@ -169,20 +166,15 @@ def get_records(server, start: int = 0, max_items: int = 100) -> list:
 
 
 def test_clean_records(postgres_server):
-    # recreate_db()
     res_json = get_records(postgres_server)
     assert len(res_json) == 0
 
 
 def test_retirement_one_standing_player(postgres_server, map_id):
-    # recreate_db()
     token, player_id = postgres_server.join('Julius Can', map_id)
     r_time = get_retirement_time(postgres_server)
-
     postgres_server.get_state(token)  # To ensure that the game is joined, so the validation will be passed
-
     tick_seconds(postgres_server, r_time - 0.001)
-
     postgres_server.get_state(token)  # To ensure that the game is joined, so the validation will be passed
     tick_seconds(postgres_server, 0.001)
 
@@ -198,14 +190,10 @@ def test_retirement_one_standing_player(postgres_server, map_id):
     assert records[0] == {'name': 'Julius Can', 'score': 0, 'playTime': r_time}
 
 
-def test_retirement_one_player(postgres_server, map_id):
-    # recreate_db()
+def test_retirement_one_player(postgres_server: CppServer, map_id):
     token, player_id = postgres_server.join('Julius Can', map_id)
     r_time = get_retirement_time(postgres_server)
-
     postgres_server.get_state(token)  # To ensure that the game is joined, so the validation will be passed
-
-    random.seed(1011)
 
     for _ in range(100):
         direction = Direction.random_str()
@@ -214,7 +202,7 @@ def test_retirement_one_player(postgres_server, map_id):
 
     state = postgres_server.get_player_state(token, player_id)
     score = state['score']
-
+    postgres_server.move(token, '')
     tick_seconds(postgres_server, r_time)
 
     request = '/api/v1/game/state'
@@ -222,21 +210,33 @@ def test_retirement_one_player(postgres_server, map_id):
               'Authorization': f'Bearer {token}'}
 
     res: requests.Response = postgres_server.request('GET', header, request)
+    assert res.status_code == 401
 
-    # assert res.status_code == 401
     records = get_records(postgres_server)
     assert records[0]['name'] == 'Julius Can'
     assert math.isclose(float(records[0]['score']), score)
 
 
 def test_a_few_zero_records(postgres_server, map_id):
-    # recreate_db()
-
     tribe = Tribe(postgres_server, map_id)
-
     r_time = get_retirement_time(postgres_server)
     tribe.update_scores()
+    tick_seconds(postgres_server, r_time)
+    tribe.add_time(r_time)
+    tribe_records = tribe.get_list()
+    records = get_records(postgres_server)
+    compare(records, tribe_records)
 
+
+def test_a_few_records(postgres_server: CppServer, map_id):
+    tribe = Tribe(postgres_server, map_id)
+    r_time = get_retirement_time(postgres_server)
+
+    for _ in range(0, random.randint(100, 350)):
+        tribe.randomized_move()
+
+    tribe.update_scores()
+    tribe.stop()
     tick_seconds(postgres_server, r_time)
     tribe.add_time(r_time)
 
@@ -244,4 +244,130 @@ def test_a_few_zero_records(postgres_server, map_id):
     records = get_records(postgres_server)
     compare(records, tribe_records)
 
+
+def test_old_young_tribes_records(postgres_server: CppServer, map_id):
+    old_tribe = Tribe(postgres_server, map_id, prefix='Elder')
+    r_time = get_retirement_time(postgres_server)
+
+    for _ in range(0, random.randint(50, 200)):
+        old_tribe.randomized_move()
+
+    old_tribe.update_scores()
+    tick_seconds(postgres_server, r_time / 2)
+    old_tribe.add_time(r_time / 2)
+    old_tribe.stop()
+
+    young_tribe = Tribe(postgres_server, map_id, prefix='Infant')
+
+    for _ in range(0, random.randint(50, 200)):
+        young_tribe.randomized_turn()
+
+        ticks = random.randint(100, min(1000, int(r_time * 900)))
+        seconds = ticks / 1000
+        young_tribe.add_time(seconds)
+        old_tribe.add_time(seconds)
+        tick_seconds(postgres_server, seconds)
+
+    young_tribe.update_scores()
+    tick_seconds(postgres_server, r_time / 2)
+    old_tribe.add_time(r_time / 2)
+    young_tribe.add_time(r_time / 2)
+
+    records = get_records(postgres_server)
+    tribe_records = old_tribe.get_list()
+
+    compare(records, tribe_records)
+
+
+def test_a_hundred_records(postgres_server: CppServer, map_id):
+    tribe = Tribe(postgres_server, map_id, num_of_players=100)
+    r_time = get_retirement_time(postgres_server)
+
+    for _ in range(0, random.randint(10, 35)):
+        tribe.randomized_move()
+
+    tribe.update_scores()
+    tribe.stop()
+    tick_seconds(postgres_server, r_time)
+    tribe.add_time(r_time)
+
+    records = get_records(postgres_server)
+    tribe_records = tribe.get_list()
+
+    compare(records, tribe_records)
+
+
+def test_a_hundred_plus_records(postgres_server: CppServer, map_id):
+    tribe = Tribe(postgres_server, map_id, num_of_players=150)
+    r_time = get_retirement_time(postgres_server)
+    for _ in range(0, random.randint(10, 35)):
+        tribe.randomized_move()
+    tribe.update_scores()
+    tribe.stop()
+    tick_seconds(postgres_server, r_time)
+    tribe.add_time(r_time)
+
+    records = get_records(postgres_server)
+    tribe_records = tribe.get_list()[:100]
+
+    compare(records, tribe_records)
+
+
+def test_two_sequential_tribes_records(postgres_server: CppServer, map_id):
+    red_foxes = Tribe(postgres_server, map_id, num_of_players=50, prefix='Red fox')
+    r_time = get_retirement_time(postgres_server)
+
+    for _ in range(0, random.randint(10, 35)):
+        red_foxes.randomized_move()
+
+    red_foxes.update_scores()
+    red_foxes.stop()
+
+    tick_seconds(postgres_server, r_time)
+    red_foxes.add_time(r_time)
+    tribe_records = red_foxes.get_list()
+    records = get_records(postgres_server)
+    compare(records, tribe_records)
+
+    orange_raccoons = Tribe(postgres_server, map_id, num_of_players=50, prefix='Orange Raccoon')
+
+    for _ in range(0, random.randint(10, 35)):
+        orange_raccoons.randomized_move()
+
+    orange_raccoons.update_scores()
+    orange_raccoons.stop()
+
+    tick_seconds(postgres_server, r_time)
+    orange_raccoons.add_time(r_time)
+
+    tribe_records.extend(orange_raccoons.get_list())
+    tribe_records.sort(key=lambda x: x['score'], reverse=True)
+
+    records = get_records(postgres_server)
+    compare(records, tribe_records)
+
+
+@pytest.mark.skip
+@pytest.mark.randomize(min_num=0, max_num=50, ncalls=3)
+@pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
+@pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
+def test_a_records_selection(postgres_server, map_id, start: int, max_items: int, extra_players: int):
+
+    tribe = Tribe(postgres_server, map_id, num_of_players=start + extra_players)
+
+    r_time = get_retirement_time(postgres_server)
+
+    for _ in range(0, random.randint(5, 15)):
+        tribe.randomized_move()
+
+    tribe.update_scores()
+    tribe.stop()
+
+    tick_seconds(postgres_server, r_time)
+    tribe.add_time(r_time)
+
+    end = min(start + extra_players, start + max_items)
+    tribe_records = tribe.get_list()[start:end]
+    records = get_records(postgres_server, start, max_items)
+    compare(records, tribe_records)
 
