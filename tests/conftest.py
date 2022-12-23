@@ -2,13 +2,11 @@ import os
 import json
 
 import pytest
-import requests
 
 from xprocess import ProcessStarter
-from urllib.parse import urljoin
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Set, Optional, Tuple
+from typing import Set
 
 from cpp_server_api import CppServer as Server
 
@@ -114,18 +112,3 @@ def tick(server, delta: int):
 def check_allow(header_allow: str, allows: Set[str]):
     expected = set(verb.strip() for verb in header_allow.split(','))
     assert expected == allows
-
-
-class Road:
-    def __init__(self, coordinates: dict):
-        x0 = coordinates['x0']
-        y0 = coordinates['y0']
-        x1 = coordinates.get('x1', x0)
-        y1 = coordinates.get('y1', y0)
-        self.x0 = min(x0, x1)
-        self.x1 = max(x0, x1)
-        self.y0 = min(y0, y1)
-        self.y1 = max(y0, y1)
-
-    def contains(self, x, y):
-        return self.x0 <= x <= self.x1 and self.y0 <= y <= self.y1

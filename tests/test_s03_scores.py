@@ -1,7 +1,6 @@
-import time
-
 import pytest
 import conftest as utils
+from game_server import Road, Point
 
 
 defaultBagCapacity = 3
@@ -78,7 +77,7 @@ def test_state_invalid_verb(server, method):
 
 
 def is_point_on_roads(roads: dict, point: list):
-    return any((utils.Road(road).contains(*point) for road in roads))
+    return any((Road(road).is_on_the_road(Point(*point)) for road in roads))
 
 
 def add_user_and_wait_loot(server, name, map_id):
