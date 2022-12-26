@@ -1,4 +1,10 @@
 import json
+import os
+import re
+
+import docker
+import docker.errors
+import pytest
 
 import requests
 
@@ -132,16 +138,42 @@ class BadRequest(ServerException):
 
 class CppServer:
 
-    def __init__(self, url: str, output: Optional[Path] = None):
-        self.url = url
-        if output:
-            self.file = open(output)
+    def __init__(self, domain: str, port: [str, int] = '8080', image: str = None, **kwargs):
+        self.url = f'http://{domain}:{port}'
 
-    def get_line(self):
-        return self.file.readline()
+        client = docker.from_env()
 
-    def get_log(self):
-        return json.loads(self.get_line())
+        if image is None:
+            image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
+        if image is not None:                       # If it's still unknown - seems like there is no image. Run as usual
+
+            args = {
+                'detach': True,
+                'auto_remove': True,
+                'ports': {"8080/tcp": int(port)},
+            }
+
+            if kwargs is not None:
+                args.update(kwargs)
+            try:
+                self.container = client.containers.run(image, **args)
+            except docker.errors.APIError:
+                self.container = None
+                raise
+            except KeyboardInterrupt:
+                self.container = None
+                return
+
+            pattern = '[Ss]erver (has )?started'
+            logs = self.container.logs().decode()
+            while re.search(pattern, logs) is None:
+                logs = self.container.logs().decode()
+        else:
+            self.container = None
+
+    def __del__(self):
+        if self.container is not None:
+            self.container.stop()
 
     def request(self, method, header, url, **kwargs):
         try:

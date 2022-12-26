@@ -64,7 +64,7 @@ def _make_server(xprocess):
 
     _, output_path = xprocess.ensure("server", Starter)
 
-    yield Server(f'http://{server_domain}:{server_port}/', output_path)
+    yield Server(server_domain, server_port)
 
     xprocess.getinfo("server").terminate()
 
@@ -73,6 +73,13 @@ def _make_server(xprocess):
 def server_one_test(xprocess):
     with _make_server(xprocess) as result:
         yield result
+
+
+@pytest.fixture(scope='function')
+def docker_server_one_test(xprocess):
+    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
+    server_port = os.environ.get('SERVER_PORT', '8080')
+    return Server(server_domain, server_port)
 
 
 def get_maps(server):
