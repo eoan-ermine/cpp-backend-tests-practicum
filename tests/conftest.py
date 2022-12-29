@@ -106,7 +106,7 @@ def docker_server():
 
 def find_open_ports(domain):
     ports = []
-    for port in range(8075, 8080):
+    for port in range(8080, 8081):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             try:
                 sock.bind((domain, port))
