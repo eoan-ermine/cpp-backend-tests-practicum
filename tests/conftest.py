@@ -82,7 +82,7 @@ def server_one_test(xprocess):
 @pytest.fixture(scope='function')
 def docker_server():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-    image_name = os.environ.get('IMAGE_NAME')
+    image_name = os.environ['IMAGE_NAME']
 
     ports_list = find_open_ports(server_domain)
 
