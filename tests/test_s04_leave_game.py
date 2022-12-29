@@ -48,7 +48,7 @@ def flush_db(db_name):
 def find_open_ports():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     ports = []
-    for port in range(49001, 49150):
+    for port in range(8075, 8085):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             try:
                 sock.bind((server_domain, port))
