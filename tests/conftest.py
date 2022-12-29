@@ -2,14 +2,18 @@ import os
 import json
 
 import pytest
+import socket
 
 from xprocess import ProcessStarter
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Set
 
-from cpp_server_api import CppServer as Server
 
+from cpp_server_api import CppServer as Server
+from cpp_server_api import PortIsAllocated
+import docker.errors
+import random
 
 def get_maps_from_config_file(config: Path):
     return json.loads(config.read_text())['maps']
@@ -76,10 +80,40 @@ def server_one_test(xprocess):
 
 
 @pytest.fixture(scope='function')
-def docker_server_one_test(xprocess):
+def docker_server():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-    server_port = os.environ.get('SERVER_PORT', '8080')
-    return Server(server_domain, server_port)
+    image_name = os.environ.get('IMAGE_NAME')
+
+    ports_list = find_open_ports(server_domain)
+
+    while True:
+        try:
+            port_number = random.randint(0, len(ports_list))
+            port = ports_list[port_number]
+            ports_list.pop(port_number)
+            server = Server(server_domain, port, image_name)
+            return server
+
+        except docker.errors.APIError:
+            ports_list = find_open_ports(server_domain)
+
+            pass
+        except IndexError:
+            ports_list = find_open_ports(server_domain)
+        except KeyboardInterrupt:
+            pass
+
+
+def find_open_ports(domain):
+    ports = []
+    for port in range(49001, 49151):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind((domain, port))
+                ports.append(port)
+            except OSError:
+                continue
+    return ports
 
 
 def get_maps(server):

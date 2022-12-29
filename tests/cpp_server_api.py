@@ -1,15 +1,14 @@
 import json
 import os
 import re
+import time
 
 import docker
 import docker.errors
-import pytest
 
 import requests
 
 from urllib.parse import urljoin
-from pathlib import Path
 from typing import Optional, Tuple, List, Union, Type, KeysView, Any
 
 
@@ -20,16 +19,10 @@ class ServerException(Exception):
         self.__data = data
         self.args = message, data
 
-    @property
     def message(self):
-        """
-        """
         return self.__message
 
-    @property
     def data(self):
-        """
-        """
         return self.__data
 
     def __str__(self):
@@ -55,25 +48,13 @@ class UnexpectedData(DataInconsistency):
         self.__given = given
         self.args = parent_object, expected, given
 
-    @property
     def parent_object(self):
-        """
-
-        """
         return self.__parent_object
 
-    @property
     def expected(self):
-        """
-
-        """
         return self.__expected
 
-    @property
     def given(self):
-        """
-
-        """
         return self.__given
 
     def __str__(self):
@@ -92,8 +73,6 @@ class WrongFields(UnexpectedData):
 
 
 class WrongType(DataInconsistency):
-    """
-    """
     def __init__(self, parent_object: str, expected_type: Union[Type, List[Type]], given_type: Type):
 
         expected_type = [t.__name__ for t in list(expected_type)]
@@ -106,23 +85,13 @@ class WrongType(DataInconsistency):
         self.__given_type = given_type
         self.args = parent_object, expected_type, given_type
 
-    @property
     def parent_object(self):
-        """
-        """
         return self.__parent_object
 
-    @property
     def expected_type(self):
-        """
-        """
         return self.__expected_type
 
-    @property
     def given_type(self):
-        """
-
-        """
         return self.__given_type
 
     def __str__(self):
@@ -136,11 +105,17 @@ class BadRequest(ServerException):
     """
 
 
+class PortIsAllocated(ServerException):
+    """
+    Docker container can't use the given port, because it's already allocated
+    """
+
+
 class CppServer:
 
     def __init__(self, domain: str, port: [str, int] = '8080', image: str = None, **kwargs):
         self.url = f'http://{domain}:{port}'
-
+        self.port = port
         client = docker.from_env()
 
         if image is None:
@@ -168,12 +143,34 @@ class CppServer:
             logs = self.container.logs().decode()
             while re.search(pattern, logs) is None:
                 logs = self.container.logs().decode()
+            self.cursor = 0
+
         else:
             self.container = None
+
+    def __enter__(self, **kwargs):
+        self.__init__(**kwargs)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__del__()
 
     def __del__(self):
         if self.container is not None:
             self.container.stop()
+
+    def get_line(self):
+        logs: str = self.container.logs().decode()
+        lines = logs.split('\n')
+        try:
+            line = lines[self.cursor]
+            self.cursor += 1
+            return line
+        except IndexError:
+
+            return None
+
+    def get_log(self):
+        return json.loads(self.get_line())
 
     def request(self, method, header, url, **kwargs):
         try:

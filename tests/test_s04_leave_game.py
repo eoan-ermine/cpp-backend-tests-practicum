@@ -1,21 +1,30 @@
+import logging
+import time
+
+import docker.errors
+
 from cpp_server_api import CppServer
 import math
 import random
 import pytest
 import os
+import logging
 
 import requests
 
 from game_server import Direction
 from dataclasses import dataclass
 from typing import List
-
+from cpp_server_api import CppServer as Server
 
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import psycopg2.errors
 
 from xprocess import ProcessStarter
 from contextlib import contextmanager
+
+import socket
 
 
 def get_connection(db_name):
@@ -27,34 +36,80 @@ def get_connection(db_name):
                             )
 
 
-@contextmanager
-def _make_server(xprocess):
-    commands = os.environ['COMMAND_RUN'].split()
-    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-    server_port = os.environ.get('SERVER_PORT', '8080')
-
-    class Starter(ProcessStarter):
-        pattern = '[Ss]erver (has )?started'
-        args = commands
-
-    _, output_path = xprocess.ensure("server", Starter)
-    xprocess.getinfo("server")
-    yield CppServer(f'http://{server_domain}:{server_port}/', output_path)
-
-    xprocess.getinfo("server").terminate()
-
-
-@pytest.fixture(scope='function')
-def postgres_server(xprocess):
+def flush_db(db_name):
     conn = get_connection(None)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     with conn.cursor() as cur:
-        cur.execute(f'DROP DATABASE IF EXISTS records --force')
-        cur.execute(f'create database records')
+        cur.execute(f'DROP DATABASE IF EXISTS {db_name} --force')
+        cur.execute(f'create database {db_name}')
     conn.close()
 
-    with _make_server(xprocess) as result:
-        yield result
+
+def find_open_ports():
+    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
+    ports = []
+    for port in range(49001, 49150):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind((server_domain, port))
+                ports.append(port)
+            except OSError:
+                continue
+    return ports
+
+
+ports_list = find_open_ports()
+
+
+@pytest.fixture(scope='function')
+def postgres_server():
+
+    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
+    image_name = os.environ.get('IMAGE_NAME')
+    is_running = False
+    global ports_list
+
+    while not is_running:
+        if len(ports_list) < 0:
+            ports_list = find_open_ports()
+        try:
+            port_number = random.randint(0, len(ports_list))
+            port = ports_list[port_number]
+            ports_list.pop(port_number)
+            db_name = f'db_for_port{port}'
+            flush_db(db_name)
+            args = {
+                'environment': {
+                    'GAME_DB_URL': f'postgres://postgres:Mys3Cr3t@172.17.0.2/{db_name}'
+                    }
+            }
+            server = Server(server_domain, port, image_name, **args)
+            return server
+            # ports_list.append(port)
+            # print('Ports: ', ports_list)
+            # server.container.stop()
+
+        except docker.errors.APIError:
+            # print('Port was busy')
+            ports_list = find_open_ports()
+
+            pass
+        except psycopg2.errors.UniqueViolation:
+            # print('Database was already exist')
+            ports_list = find_open_ports()
+
+            pass
+        except psycopg2.errors.ObjectInUse:
+            # print('Database was accessed by someone else then trying to drop')
+            ports_list = find_open_ports()
+
+            pass
+        except IndexError:
+            # print('Run out of ports')
+            ports_list = find_open_ports()
+        except KeyboardInterrupt:
+            pass
+            # print(ports_list)
 
 
 def compare(records: List[dict], tribe_records: List[dict]):
@@ -139,7 +194,7 @@ class Tribe:
 
 def get_retirement_time(server) -> float:
     # How can it be extracted?
-    return 10.0
+    return 15.0
 
 
 def tick_seconds(server, seconds: float):
@@ -190,7 +245,7 @@ def test_retirement_one_standing_player(postgres_server, map_id):
     assert records[0] == {'name': 'Julius Can', 'score': 0, 'playTime': r_time}
 
 
-def test_retirement_one_player(postgres_server: CppServer, map_id):
+def test_retirement_one_player(postgres_server, map_id):
     token, player_id = postgres_server.join('Julius Can', map_id)
     r_time = get_retirement_time(postgres_server)
     postgres_server.get_state(token)  # To ensure that the game is joined, so the validation will be passed
@@ -228,7 +283,7 @@ def test_a_few_zero_records(postgres_server, map_id):
     compare(records, tribe_records)
 
 
-def test_a_few_records(postgres_server: CppServer, map_id):
+def test_a_few_records(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id)
     r_time = get_retirement_time(postgres_server)
 
@@ -245,7 +300,7 @@ def test_a_few_records(postgres_server: CppServer, map_id):
     compare(records, tribe_records)
 
 
-def test_old_young_tribes_records(postgres_server: CppServer, map_id):
+def test_old_young_tribes_records(postgres_server, map_id):
     old_tribe = Tribe(postgres_server, map_id, prefix='Elder')
     r_time = get_retirement_time(postgres_server)
 
@@ -279,7 +334,8 @@ def test_old_young_tribes_records(postgres_server: CppServer, map_id):
     compare(records, tribe_records)
 
 
-def test_a_hundred_records(postgres_server: CppServer, map_id):
+
+def test_a_hundred_records(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id, num_of_players=100)
     r_time = get_retirement_time(postgres_server)
 
@@ -297,7 +353,8 @@ def test_a_hundred_records(postgres_server: CppServer, map_id):
     compare(records, tribe_records)
 
 
-def test_a_hundred_plus_records(postgres_server: CppServer, map_id):
+
+def test_a_hundred_plus_records(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id, num_of_players=150)
     r_time = get_retirement_time(postgres_server)
     for _ in range(0, random.randint(10, 35)):
@@ -313,7 +370,7 @@ def test_a_hundred_plus_records(postgres_server: CppServer, map_id):
     compare(records, tribe_records)
 
 
-def test_two_sequential_tribes_records(postgres_server: CppServer, map_id):
+def test_two_sequential_tribes_records(postgres_server, map_id):
     red_foxes = Tribe(postgres_server, map_id, num_of_players=50, prefix='Red fox')
     r_time = get_retirement_time(postgres_server)
 
@@ -347,12 +404,35 @@ def test_two_sequential_tribes_records(postgres_server: CppServer, map_id):
     compare(records, tribe_records)
 
 
-@pytest.mark.skip
-@pytest.mark.randomize(min_num=0, max_num=50, ncalls=3)
-@pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
-@pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
-def test_a_records_selection(postgres_server, map_id, start: int, max_items: int, extra_players: int):
+def test_reload_server(postgres_server, map_id):
+    tribe = Tribe(postgres_server, map_id, num_of_players=50)
+    r_time = get_retirement_time(postgres_server)
+    for _ in range(0, random.randint(10, 35)):
+        tribe.randomized_move()
+    tribe.update_scores()
+    tribe.stop()
+    tick_seconds(postgres_server, r_time)
+    tribe.add_time(r_time)
 
+    records = get_records(postgres_server)
+    tribe_records = tribe.get_list()[:100]
+
+    compare(records, tribe_records)
+
+    postgres_server.container.reload()
+    reloaded_records = get_records(postgres_server)
+
+    compare(records, reloaded_records)
+
+
+@pytest.mark.skip
+# @pytest.mark.randomize(min_num=0, max_num=50, ncalls=3)
+# @pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
+# @pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
+@pytest.mark.parametrize('start', [0])
+@pytest.mark.parametrize('max_items', [1])
+@pytest.mark.parametrize('extra_players', [2])
+def test_a_records_selection(postgres_server, map_id, start, max_items, extra_players):
     tribe = Tribe(postgres_server, map_id, num_of_players=start + extra_players)
 
     r_time = get_retirement_time(postgres_server)
@@ -369,5 +449,9 @@ def test_a_records_selection(postgres_server, map_id, start: int, max_items: int
     end = min(start + extra_players, start + max_items)
     tribe_records = tribe.get_list()[start:end]
     records = get_records(postgres_server, start, max_items)
-    compare(records, tribe_records)
+    print(records)
+    print(tribe_records)
+
+
+    # compare(records, tribe_records)
 

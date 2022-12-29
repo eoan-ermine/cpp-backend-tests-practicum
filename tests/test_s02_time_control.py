@@ -1,41 +1,17 @@
 import os
 import random
 
-import docker.errors
 import pytest
 import pathlib
 
 import game_server as game
 from game_server import Point, Vector2D, Direction
-from cpp_server_api import CppServer as Server
-
-
-# @pytest.fixture()
-# def map_id():
-#     return 'map1'
 
 
 @pytest.fixture()
 def game_server():
     config_path = pathlib.Path(os.environ['CONFIG_PATH'])
-    # config_path = pathlib.Path('data/config.json')
     return game.GameServer(config_path)
-
-
-@pytest.fixture(scope="function")
-def docker_server():
-
-    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-    image_name = os.environ.get('IMAGE_NAME', 'my_http_server')
-    for port in range(49001, 49150):
-        try:
-            print(port)
-            server = Server(server_domain, port, image_name)
-            print(port)
-            return server
-        except docker.errors.APIError:
-            print('Another port')
-            pass
 
 
 def get_states(server, game_server: game.GameServer, token):
@@ -217,9 +193,6 @@ def test_move_sequence_one_player(docker_server, game_server, map_id):
         tick_both(docker_server, game_server, ticks)
 
         state, py_state = get_states(docker_server, game_server, token)
-        # print(direction, ticks)
-        # print('Server:', state)
-        # print('PyServer:', py_state)
 
         compare_states(state, py_state)
 
@@ -227,6 +200,7 @@ def test_move_sequence_one_player(docker_server, game_server, map_id):
 @pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
 @pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
 def test_two_players_turns(docker_server, game_server, direction_1, direction_2, map_id):
+    docker_server = docker_server
     token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
     token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
 
