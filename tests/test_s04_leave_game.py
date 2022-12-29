@@ -66,6 +66,11 @@ def postgres_server():
 
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     image_name = os.environ.get('IMAGE_NAME')
+    user = os.environ.get('POSTGRES_USER', 'postgres')
+    password = os.environ.get('POSTGRES_PASSWORD', 'Mys3Cr3t')
+    host = os.environ.get('POSTGRES_HOST', '172.17.0.2')
+    postgres_port = os.environ.get('POSTGRES_PORT', '5432')
+
     is_running = False
     global ports_list
 
@@ -80,7 +85,7 @@ def postgres_server():
             flush_db(db_name)
             args = {
                 'environment': {
-                    'GAME_DB_URL': f'postgres://postgres:Mys3Cr3t@172.17.0.2/{db_name}'
+                    'GAME_DB_URL': f'postgres://{user}:{password}@{host}:{postgres_port}/{db_name}'
                     }
             }
             server = Server(server_domain, port, image_name, **args)
