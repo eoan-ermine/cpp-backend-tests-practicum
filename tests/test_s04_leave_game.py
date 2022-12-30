@@ -58,7 +58,7 @@ def find_open_ports():
     return ports
 
 
-ports_list = find_open_ports()
+global_ports_list = find_open_ports()
 
 
 @pytest.fixture(scope='function')
@@ -72,8 +72,8 @@ def postgres_server():
     postgres_port = os.environ.get('POSTGRES_PORT', '5432')
 
     is_running = False
-    global ports_list
-
+    # global ports_list
+    ports_list = [port for port in range(49001, 49150)]
     while not is_running:
         if len(ports_list) < 0:
             ports_list = find_open_ports()

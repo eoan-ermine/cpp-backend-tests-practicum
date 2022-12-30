@@ -84,8 +84,9 @@ def docker_server():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     image_name = os.environ['IMAGE_NAME']
 
-    ports_list = find_open_ports(server_domain)
-
+    # ports_list = find_open_ports(server_domain)
+    # ports_list = [port for port in range(49001, 49150)]
+    ports_list = [8080]
     while True:
         try:
             port_number = random.randint(0, len(ports_list))
