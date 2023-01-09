@@ -86,23 +86,25 @@ def docker_server():
 
     # ports_list = find_open_ports(server_domain)
     # ports_list = [port for port in range(49001, 49150)]
-    ports_list = [8080]
+    # ports_list = [8080]
     while True:
         try:
-            port_number = random.randint(0, len(ports_list))
-            port = ports_list[port_number]
-            ports_list.pop(port_number)
+
+            # port_number = random.randint(0, len(ports_list))
+            # port = ports_list[port_number]
+            # ports_list.pop(port_number)
+            port = 8080
             server = Server(server_domain, port, image_name)
             return server
 
         except docker.errors.APIError:
             ports_list = find_open_ports(server_domain)
+            raise
+        # except IndexError:
+        #     ports_list = find_open_ports(server_domain)
 
-            pass
-        except IndexError:
-            ports_list = find_open_ports(server_domain)
-        except KeyboardInterrupt:
-            pass
+        # except KeyboardInterrupt:
+        #     pass
 
 
 def find_open_ports(domain):
