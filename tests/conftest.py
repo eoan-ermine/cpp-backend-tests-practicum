@@ -97,7 +97,7 @@ def docker_server():
 
             # port = ports_list[port_number]
             # ports_list.pop(port_number)
-            port = 49001
+            port = 49010
             server = Server(server_domain, port, image_name)
             return server
 
@@ -107,8 +107,9 @@ def docker_server():
             if current_time - start_time >= 5:
                 raise Exception({'ports': ports_list, 'ex': ex})
 
-        # except IndexError:
-        #     ports_list = find_open_ports(server_domain)
+        except IndexError as ex:
+            ports_list = find_open_ports(server_domain)
+            raise Exception({'ports': ports_list, 'ex': ex})
 
         # except KeyboardInterrupt:
         #     pass

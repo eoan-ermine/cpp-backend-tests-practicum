@@ -145,7 +145,7 @@ class CppServer:
             while re.search(pattern, logs) is None:
                 logs = self.container.logs().decode()
                 current_time = time.time()
-                if current_time - start_time >= 10:
+                if current_time - start_time >= 1:
                     raise Exception({'message': 'Cannot get the right start phrase from the container.', 'logs': logs})
             self.cursor = 0
         else:
