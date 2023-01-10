@@ -93,10 +93,11 @@ def docker_server():
     while True:
         try:
 
-            port_number = random.randint(0, len(ports_list))
-            port = ports_list[port_number]
+            # port_number = random.randint(0, len(ports_list))
+
+            # port = ports_list[port_number]
             # ports_list.pop(port_number)
-            # port = 49001
+            port = 49001
             server = Server(server_domain, port, image_name)
             return server
 
