@@ -217,7 +217,7 @@ def get_records(server, start: int = 0, max_items: int = 100) -> list:
     request = '/api/v1/game/records'
     header = {'content-type': 'application/json'}
     params = {'start': start, 'maxItems': max_items}
-    res: requests.Response = server.request('GET', header, request, data=params)
+    res: requests.Response = server.request('GET', header, request, params=params)
     validate_ok_response(res)
     res_json: list = res.json()
     assert type(res_json) == list
@@ -430,14 +430,10 @@ def test_reload_server(postgres_server, map_id):
     compare(records, reloaded_records)
 
 
-@pytest.mark.skip
-# @pytest.mark.randomize(min_num=0, max_num=50, ncalls=3)
-# @pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
-# @pytest.mark.randomize(min_num=0, max_num=100, ncalls=3)
-@pytest.mark.parametrize('start', [0])
-@pytest.mark.parametrize('max_items', [1])
-@pytest.mark.parametrize('extra_players', [2])
-def test_a_records_selection(postgres_server, map_id, start, max_items, extra_players):
+@pytest.mark.randomize(min_num=0, max_num=50, ncalls=2)
+@pytest.mark.randomize(min_num=0, max_num=100, ncalls=2)
+@pytest.mark.randomize(min_num=0, max_num=100, ncalls=2)
+def test_a_records_selection(postgres_server, map_id, start: int, max_items: int, extra_players: int):
     tribe = Tribe(postgres_server, map_id, num_of_players=start + extra_players)
 
     r_time = get_retirement_time(postgres_server)
