@@ -104,8 +104,10 @@ def docker_server():
         except docker.errors.APIError as ex:
             ports_list = find_open_ports(server_domain)
             current_time = time.time()
-            if current_time - start_time >= 5:
-                raise Exception({'ports': ports_list, 'ex': ex})
+            print(ex, ex.args)
+
+            # if current_time - start_time >= 5:
+            #     raise Exception({'ports': ports_list, 'ex': ex})
 
         except IndexError as ex:
             ports_list = find_open_ports(server_domain)
@@ -124,6 +126,7 @@ def find_open_ports(domain):
                 ports.append(port)
             except OSError:
                 continue
+    print(ports)
     return ports
 
 

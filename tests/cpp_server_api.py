@@ -141,8 +141,12 @@ class CppServer:
 
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
+            print(logs)
             start_time = time.time()
+
             while re.search(pattern, logs) is None:
+                time.sleep(1)
+                print(logs)
                 logs = self.container.logs().decode()
                 current_time = time.time()
                 if current_time - start_time >= 1:
