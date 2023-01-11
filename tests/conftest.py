@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import time
@@ -93,10 +94,10 @@ def docker_server():
     while True:
         try:
 
-            # port_number = random.randint(0, len(ports_list))
+            port_number = random.randint(0, len(ports_list))
 
-            # port = ports_list[port_number]
-            # ports_list.pop(port_number)
+            port = ports_list[port_number]
+            ports_list.pop(port_number)
             port = 49010
             server = Server(server_domain, port, image_name)
             return server
@@ -104,10 +105,9 @@ def docker_server():
         except docker.errors.APIError as ex:
             ports_list = find_open_ports(server_domain)
             current_time = time.time()
-            print(ex, ex.args)
-
-            # if current_time - start_time >= 5:
-            #     raise Exception({'ports': ports_list, 'ex': ex})
+            logging.debug(ex, ex.args)
+            if current_time - start_time >= 5:
+                raise Exception({'ports': ports_list, 'ex': ex})
 
         except IndexError as ex:
             ports_list = find_open_ports(server_domain)
@@ -126,7 +126,8 @@ def find_open_ports(domain):
                 ports.append(port)
             except OSError:
                 continue
-    print(ports)
+    logging.debug(ports)
+
     return ports
 
 

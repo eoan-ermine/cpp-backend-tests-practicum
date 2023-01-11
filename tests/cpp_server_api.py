@@ -2,6 +2,7 @@ import json
 import os
 import re
 import time
+import logging
 
 import docker
 import docker.errors
@@ -130,10 +131,16 @@ class CppServer:
 
             if kwargs is not None:
                 args.update(kwargs)
+            start_time = time.time()
+
             try:
                 self.container = client.containers.run(image, **args)
-            except docker.errors.APIError:
+            except docker.errors.APIError as ex:
                 self.container = None
+                current_time = time.time()
+                if current_time - start_time >= 5:
+                    raise Exception({'port': port, 'ex': ex})
+
                 raise
             except KeyboardInterrupt:
                 self.container = None
@@ -141,12 +148,13 @@ class CppServer:
 
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
+            logging.debug(logs)
             print(logs)
             start_time = time.time()
 
             while re.search(pattern, logs) is None:
                 time.sleep(1)
-                print(logs)
+                logging.debug(logs)
                 logs = self.container.logs().decode()
                 current_time = time.time()
                 if current_time - start_time >= 1:
