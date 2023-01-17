@@ -124,7 +124,7 @@ class CppServer:
         server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
         server_port = os.environ.get('SERVER_PORT', '8080')
         docker_network = os.environ.get('DOCKER_NETWORK')
-        bind_port = 49001
+        bind_port = 8080
 
         kwargs = {
             'detach': True,
@@ -163,7 +163,7 @@ class CppServer:
                 # else:
                 #     bind_port = 49001
                 kwargs['ports'] = {f"{server_port}/tcp": bind_port}
-
+                raise
             except KeyboardInterrupt:
                 self.container = None
                 return
