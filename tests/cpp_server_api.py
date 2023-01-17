@@ -134,7 +134,7 @@ class CppServer:
         if docker_network:
             kwargs['network'] = docker_network
         if server_domain != '127.0.0.1':
-            kwargs['name'] = server_domain + str(bind_port)
+            kwargs['name'] = server_domain
 
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
