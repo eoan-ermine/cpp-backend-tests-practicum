@@ -120,28 +120,33 @@ class CppServer:
         client = docker.from_env()
         inspector = docker.APIClient()
 
+        server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
+        server_port = os.environ.get('SERVER_PORT', '8080')
+        docker_network = os.environ.get('DOCKER_NETWORK')
+
+        kwargs = {
+            'detach': True,
+            'auto_remove': True,
+            'ports': {f"{server_port}/tcp": server_port},
+        }
+        if docker_network:
+            kwargs['network'] = docker_network
+        if server_domain != '127.0.0.1':
+            kwargs['name'] = server_domain
+
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
-        if image is not None:                       # If it's still unknown - seems like there is no image. Run as usual
+        # if image is not None:                       # If it's still unknown - seems like there is no image. Run as usual
 
-            args = {
-                'detach': True,
-                'auto_remove': True,
-                # 'ports': {"8080/tcp": int(port)},
-            }
+        try:
+            self.container = client.containers.run(image, **kwargs)
+        except docker.errors.APIError as ex:
+            self.container = None
+            raise
 
-            if kwargs is not None:
-                args.update(kwargs)
-
-            try:
-                self.container = client.containers.run(image, **args)
-            except docker.errors.APIError as ex:
-                self.container = None
-                raise
-
-            except KeyboardInterrupt:
-                self.container = None
-                return
+        except KeyboardInterrupt:
+            self.container = None
+            return
 
             # pattern = 'server started'
             # logs = self.container.logs().decode()
@@ -150,7 +155,7 @@ class CppServer:
             # print(j_log)
             # # print(logs)
             # start_time = time.time()
-            time.sleep(3)
+        time.sleep(1)
 
             # while j_log['message'] != pattern:
             #     time.sleep(1)
@@ -163,13 +168,13 @@ class CppServer:
             #     if current_time - start_time >= 1:
             #         raise Exception({'message': 'Cannot get the right start phrase from the container.', 'logs': logs})
 
-            self.cursor = 0
-            domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
-            self.url = f'http://{domain}:8080'
-            print(domain)
+        self.cursor = 0
+        # domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
+        # self.url = f'http://{domain}:8080'
+        # print(domain)
 
-        else:
-            self.container = None
+        # else:
+        #     self.container = None
 
     def __enter__(self, **kwargs):
         self.__init__(**kwargs)
