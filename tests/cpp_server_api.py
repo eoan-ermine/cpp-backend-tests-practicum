@@ -132,15 +132,12 @@ class CppServer:
 
             if kwargs is not None:
                 args.update(kwargs)
-            start_time = time.time()
 
             try:
                 self.container = client.containers.run(image, **args)
             except docker.errors.APIError as ex:
                 self.container = None
-                current_time = time.time()
-                if current_time - start_time >= 5:
-                    raise
+                raise
 
             except KeyboardInterrupt:
                 self.container = None
@@ -159,9 +156,12 @@ class CppServer:
                 current_time = time.time()
                 if current_time - start_time >= 1:
                     raise Exception({'message': 'Cannot get the right start phrase from the container.', 'logs': logs})
+
             self.cursor = 0
             domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
             self.url = f'http://{domain}:8080'
+            print(domain)
+
         else:
             self.container = None
 
