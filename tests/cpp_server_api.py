@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import re
 import time
 import logging
@@ -115,19 +116,20 @@ class PortIsAllocated(ServerException):
 class CppServer:
 
     def __init__(self, domain: str, port: [str, int] = '8080', image: str = None, **kwargs):
+
         self.url = f'http://{domain}:{port}'
         self.port = port
         client = docker.from_env()
-        inspector = docker.APIClient()
 
         server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
         server_port = os.environ.get('SERVER_PORT', '8080')
         docker_network = os.environ.get('DOCKER_NETWORK')
+        bind_port = 49001
 
         kwargs = {
             'detach': True,
             'auto_remove': True,
-            'ports': {f"{server_port}/tcp": server_port},
+            'ports': {f"{server_port}/tcp": bind_port},
         }
         if docker_network:
             kwargs['network'] = docker_network
@@ -136,45 +138,38 @@ class CppServer:
 
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
-        # if image is not None:                       # If it's still unknown - seems like there is no image. Run as usual
+        while image is not None:
+            try:
+                self.container = client.containers.run(image, **kwargs)
 
-        try:
-            self.container = client.containers.run(image, **kwargs)
-        except docker.errors.APIError as ex:
-            self.container = None
-            raise
+                pattern = '[Ss]erver (has )?started'
+                logs = self.container.logs().decode()
+                start_time = time.time()
+                while re.search(pattern, logs) is None:
+                    time.sleep(1)
+                    logging.debug(logs)
+                    logs = self.container.logs().decode()
+                    print(logs)
+                    current_time = time.time()
+                    if current_time - start_time >= 3:
+                        raise Exception({'message': 'Cannot get the right start phrase from the container.',
+                                         'logs': logs})
+                break
 
-        except KeyboardInterrupt:
-            self.container = None
-            return
+            except docker.errors.APIError as ex:
+                self.container = None
+                # if bind_port < 49150:
+                bind_port = random.randint(49001, 49151)
+                # else:
+                #     bind_port = 49001
+                kwargs['ports'] = {f"{server_port}/tcp": bind_port}
 
-            # pattern = 'server started'
-            # logs = self.container.logs().decode()
-            # logging.debug(logs)
-            # j_log = json.loads(logs)
-            # print(j_log)
-            # # print(logs)
-            # start_time = time.time()
-        time.sleep(1)
-
-            # while j_log['message'] != pattern:
-            #     time.sleep(1)
-            #     logging.debug(logs)
-            #     logs = self.container.logs()
-            #     j_log = json.loads(logs)
-            #     print(j_log)
-            #     print(logs)
-            #     current_time = time.time()
-            #     if current_time - start_time >= 1:
-            #         raise Exception({'message': 'Cannot get the right start phrase from the container.', 'logs': logs})
+            except KeyboardInterrupt:
+                self.container = None
+                return
+        self.url = f'http://{domain}:{bind_port}'
 
         self.cursor = 0
-        # domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
-        # self.url = f'http://{domain}:8080'
-        # print(domain)
-
-        # else:
-        #     self.container = None
 
     def __enter__(self, **kwargs):
         self.__init__(**kwargs)
