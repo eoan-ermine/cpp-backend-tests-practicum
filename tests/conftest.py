@@ -85,50 +85,9 @@ def server_one_test(xprocess):
 def docker_server():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     image_name = os.environ['IMAGE_NAME']
-
-    ports_list = find_open_ports(server_domain)
-    # ports_list = [port for port in range(49001, 49150)]
-    # ports_list = [8080]
-    start_time = time.time()
-
-    while True:
-        try:
-
-            port_number = random.randint(0, len(ports_list))
-
-            port = ports_list[port_number]
-            ports_list.pop(port_number)
-            port = 49010
-            server = Server(server_domain, port, image_name)
-            return server
-
-        except docker.errors.APIError as ex:
-            ports_list = find_open_ports(server_domain)
-            current_time = time.time()
-            logging.debug(ex, ex.args)
-            if current_time - start_time >= 5:
-                raise Exception({'ports': ports_list, 'ex': ex})
-
-        except IndexError as ex:
-            ports_list = find_open_ports(server_domain)
-            raise Exception({'ports': ports_list, 'ex': ex})
-
-        # except KeyboardInterrupt:
-        #     pass
-
-
-def find_open_ports(domain):
-    ports = []
-    for port in range(49001, 49150):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            try:
-                sock.bind((domain, port))
-                ports.append(port)
-            except OSError:
-                continue
-    logging.debug(ports)
-
-    return ports
+    port = '8080'
+    server = Server(server_domain, port, image_name)
+    return server
 
 
 def get_maps(server):

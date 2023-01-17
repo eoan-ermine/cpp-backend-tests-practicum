@@ -118,6 +118,7 @@ class CppServer:
         self.url = f'http://{domain}:{port}'
         self.port = port
         client = docker.from_env()
+        inspector = docker.APIClient()
 
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
@@ -126,7 +127,7 @@ class CppServer:
             args = {
                 'detach': True,
                 'auto_remove': True,
-                'ports': {"8080/tcp": int(port)},
+                # 'ports': {"8080/tcp": int(port)},
             }
 
             if kwargs is not None:
@@ -139,9 +140,8 @@ class CppServer:
                 self.container = None
                 current_time = time.time()
                 if current_time - start_time >= 5:
-                    raise Exception({'port': port, 'ex': ex})
+                    raise
 
-                raise
             except KeyboardInterrupt:
                 self.container = None
                 return
@@ -160,6 +160,8 @@ class CppServer:
                 if current_time - start_time >= 1:
                     raise Exception({'message': 'Cannot get the right start phrase from the container.', 'logs': logs})
             self.cursor = 0
+            domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
+            self.url = f'http://{domain}:8080'
         else:
             self.container = None
 
