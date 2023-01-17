@@ -143,24 +143,25 @@ class CppServer:
                 self.container = None
                 return
 
-            pattern = 'server started'
-            logs = self.container.logs().decode()
-            logging.debug(logs)
-            j_log = json.loads(logs)
-            print(j_log)
-            # print(logs)
-            start_time = time.time()
+            # pattern = 'server started'
+            # logs = self.container.logs().decode()
+            # logging.debug(logs)
+            # j_log = json.loads(logs)
+            # print(j_log)
+            # # print(logs)
+            # start_time = time.time()
+            time.sleep(3)
 
-            while j_log['message'] != pattern:
-                time.sleep(1)
-                logging.debug(logs)
-                logs = self.container.logs()
-                j_log = json.loads(logs)
-                print(j_log)
-                print(logs)
-                current_time = time.time()
-                if current_time - start_time >= 1:
-                    raise Exception({'message': 'Cannot get the right start phrase from the container.', 'logs': logs})
+            # while j_log['message'] != pattern:
+            #     time.sleep(1)
+            #     logging.debug(logs)
+            #     logs = self.container.logs()
+            #     j_log = json.loads(logs)
+            #     print(j_log)
+            #     print(logs)
+            #     current_time = time.time()
+            #     if current_time - start_time >= 1:
+            #         raise Exception({'message': 'Cannot get the right start phrase from the container.', 'logs': logs})
 
             self.cursor = 0
             domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
