@@ -1,23 +1,23 @@
 import pytest
 
 
-def get_maps(server):
+def get_maps(docker_server):
     request = 'api/v1/maps'
-    res = server.get(request)
+    res = docker_server.get(request)
     return res.json()
 
 
-def join_to_map(server, user_name, map_id):
+def join_to_map(docker_server, user_name, map_id):
     request = 'api/v1/game/join'
     header = {'content-type': 'application/json'}
     data = {"userName": user_name, "mapId": map_id}
-    return server.request('POST', header, request, json=data)
+    return docker_server.request('POST', header, request, json=data)
 
 
-def test_state_miss_token(server):
+def test_state_miss_token(docker_server):
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json'}
-    res = server.request('GET', header, request)
+    res = docker_server.request('GET', header, request)
     assert res.status_code == 401
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
@@ -28,10 +28,10 @@ def test_state_miss_token(server):
 
 
 @pytest.mark.randomize(min_length=0, max_length=31, str_attrs=('hexdigits',), ncalls=10)
-def test_state_invalid_token(server, token: str):
+def test_state_invalid_token(docker_server, token: str):
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
-    res = server.request('GET', header, request)
+    res = docker_server.request('GET', header, request)
     assert res.status_code == 401
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
@@ -42,10 +42,10 @@ def test_state_invalid_token(server, token: str):
 
 
 @pytest.mark.randomize(fixed_length=32, str_attrs=('hexdigits',), ncalls=10)
-def test_state_unknown_token(server, token: str):
+def test_state_unknown_token(docker_server, token: str):
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
-    res = server.request('GET', header, request)
+    res = docker_server.request('GET', header, request)
     assert res.status_code == 401
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
@@ -56,10 +56,10 @@ def test_state_unknown_token(server, token: str):
 
 
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
-def test_state_invalid_verb(server, method):
+def test_state_invalid_verb(docker_server, method):
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json', 'authorization': 'Bearer 6516861d89ebfff147bf2eb2b5153ae1'}
-    res = server.request(method, header, request)
+    res = docker_server.request(method, header, request)
     assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
     assert res.headers['cache-control'] == 'no-cache'
@@ -72,15 +72,15 @@ def test_state_invalid_verb(server, method):
 
 
 @pytest.mark.parametrize('method', ['GET', 'HEAD'])
-def test_state_success(server, method):
-    maps = get_maps(server)
-    res = join_to_map(server, "User1", maps[0]['id'])
+def test_state_success(docker_server, method):
+    maps = get_maps(docker_server)
+    res = join_to_map(docker_server, "User1", maps[0]['id'])
     token = res.json()['authToken']
 
     request = 'api/v1/game/state'
     header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
 
-    res = server.request(method, header, request)
+    res = docker_server.request(method, header, request)
 
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'

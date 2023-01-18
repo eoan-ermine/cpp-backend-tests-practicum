@@ -85,7 +85,7 @@ def server_one_test(xprocess):
 def docker_server():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     image_name = os.environ['IMAGE_NAME']
-    port = '8080'
+    port = os.environ.get('SERVER_PORT', '8080')
     server = Server(server_domain, port, image_name)
     return server
 

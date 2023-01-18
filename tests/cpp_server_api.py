@@ -115,12 +115,12 @@ class PortIsAllocated(ServerException):
 
 class CppServer:
 
-    def __init__(self, server_domain: str, port: [str, int] = '8080', image: str = None, **extra_kwargs):
+    def __init__(self, server_domain: str, port: [str, int] = '8080', image: str = None):
         self.url = f'http://{server_domain}:{port}'
         self.port = port
+
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
-
         if image is None:
             return
 
@@ -150,8 +150,9 @@ class CppServer:
                                      'logs': logs})
             print(inspector.inspect_container(self.container.id))
             name = inspector.inspect_container(self.container.id)['Name'][1:]
-            self.container.rename(str(random.random()))
+            self.container.rename(name[:-1])
             self.container.rename(name)
+
             if server_domain != '127.0.0.1':
                 server_domain = inspector.inspect_container(self.container.id)['Name'][1:]
             else:
