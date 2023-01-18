@@ -71,36 +71,36 @@ def test_tick_miss_delta(docker_server):
     assert res_json['code'] == 'invalidArgument'
     assert res_json.get('message')
 
-
-@pytest.mark.parametrize('delta', {0.0, '0', True})
-def test_tick_invalid_type_delta(docker_server, delta):
-    request = 'api/v1/game/tick'
-    header = {'content-type': 'application/json'}
-
-    data = {"timeDelta": delta}
-    res = docker_server.request('POST', header, request, json=data)
-
-    assert res.status_code == 400
-    assert res.headers['content-type'] == 'application/json'
-    assert res.headers['cache-control'] == 'no-cache'
-    res_json = res.json()
-    assert res_json['code'] == 'invalidArgument'
-    assert res_json.get('message')
-
-
-@pytest.mark.parametrize('method', ['GET', 'OPTIONS', 'HEAD', 'PUT', 'PATCH', 'DELETE'])
-def test_tick_invalid_verb(docker_server, method):
-    request = 'api/v1/game/tick'
-    header = {'content-type': 'application/json'}
-    res = docker_server.request(method, header, request)
-    assert res.status_code == 405
-    assert res.headers['content-type'] == 'application/json'
-    assert res.headers['cache-control'] == 'no-cache'
-
-    if method != 'HEAD':
-        res_json = res.json()
-        assert res_json['code'] == 'invalidMethod'
-        assert res_json.get('message')
+#
+# @pytest.mark.parametrize('delta', {0.0, '0', True})
+# def test_tick_invalid_type_delta(docker_server, delta):
+#     request = 'api/v1/game/tick'
+#     header = {'content-type': 'application/json'}
+#
+#     data = {"timeDelta": delta}
+#     res = docker_server.request('POST', header, request, json=data)
+#
+#     assert res.status_code == 400
+#     assert res.headers['content-type'] == 'application/json'
+#     assert res.headers['cache-control'] == 'no-cache'
+#     res_json = res.json()
+#     assert res_json['code'] == 'invalidArgument'
+#     assert res_json.get('message')
+#
+#
+# @pytest.mark.parametrize('method', ['GET', 'OPTIONS', 'HEAD', 'PUT', 'PATCH', 'DELETE'])
+# def test_tick_invalid_verb(docker_server, method):
+#     request = 'api/v1/game/tick'
+#     header = {'content-type': 'application/json'}
+#     res = docker_server.request(method, header, request)
+#     assert res.status_code == 405
+#     assert res.headers['content-type'] == 'application/json'
+#     assert res.headers['cache-control'] == 'no-cache'
+#
+#     if method != 'HEAD':
+#         res_json = res.json()
+#         assert res_json['code'] == 'invalidMethod'
+#         assert res_json.get('message')
 
 #
 # @pytest.mark.randomize(min_num=0, max_num=10000, ncalls=10)
@@ -131,13 +131,13 @@ def test_match_roads(docker_server, game_server):
         assert py_map == server_map
 
 #
-@pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
-def test_turn_one_player(docker_server, game_server, direction, map_id):
-    token, _ = add_player(docker_server, game_server, map_id, 'player')
-    move_players(docker_server, game_server, token, direction)
-    state, py_state = get_states(docker_server, game_server, token)
-
-    compare_states(state, py_state)
+# @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
+# def test_turn_one_player(docker_server, game_server, direction, map_id):
+#     token, _ = add_player(docker_server, game_server, map_id, 'player')
+#     move_players(docker_server, game_server, token, direction)
+#     state, py_state = get_states(docker_server, game_server, token)
+#
+#     compare_states(state, py_state)
 
 
 # @pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)

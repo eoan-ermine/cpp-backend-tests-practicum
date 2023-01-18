@@ -128,7 +128,7 @@ class CppServer:
         kwargs = {
             'detach': True,
             'auto_remove': True,
-            'ports': {f"{server_port}/tcp": bind_port},
+            # 'ports': {f"{server_port}/tcp": bind_port},
         }
         server_domain += '_' + bind_port
 
