@@ -117,7 +117,6 @@ class CppServer:
 
     def __init__(self, domain: str, port: [str, int] = '8080', image: str = None, **kwargs):
 
-        self.url = f'http://{domain}:{port}'
         self.port = port
         client = docker.from_env()
 
@@ -131,6 +130,8 @@ class CppServer:
             'auto_remove': True,
             'ports': {f"{server_port}/tcp": bind_port},
         }
+        server_domain += '_' + bind_port
+
         if docker_network:
             kwargs['network'] = docker_network
         if server_domain != '127.0.0.1':
@@ -154,6 +155,8 @@ class CppServer:
                     if current_time - start_time >= 3:
                         raise Exception({'message': 'Cannot get the right start phrase from the container.',
                                          'logs': logs})
+                self.url = f'http://{server_domain}:{port}'
+
                 break
 
             except docker.errors.APIError as ex:
