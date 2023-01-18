@@ -124,7 +124,7 @@ class CppServer:
         server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
         server_port = os.environ.get('SERVER_PORT', '8080')
         docker_network = os.environ.get('DOCKER_NETWORK')
-        bind_port = 8000
+        bind_port = '8080'
 
         kwargs = {
             'detach': True,
@@ -134,7 +134,7 @@ class CppServer:
         if docker_network:
             kwargs['network'] = docker_network
         if server_domain != '127.0.0.1':
-            kwargs['name'] = server_domain
+            kwargs['name'] = server_domain + '_' + str(bind_port)
 
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
@@ -158,16 +158,11 @@ class CppServer:
 
             except docker.errors.APIError as ex:
                 self.container = None
-                # if bind_port < 49150:
-                bind_port = random.randint(49001, 49151)
-                # else:
-                #     bind_port = 49001
-                kwargs['ports'] = {f"{server_port}/tcp": bind_port}
                 raise
             except KeyboardInterrupt:
                 self.container = None
                 return
-        self.url = f'http://{domain}:{bind_port}'
+        # self.url = f'http://{domain}:{bind_port}'
 
         self.cursor = 0
 

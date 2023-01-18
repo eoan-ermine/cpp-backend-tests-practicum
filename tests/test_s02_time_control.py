@@ -169,53 +169,101 @@ def test_turn_one_player(docker_server, game_server, direction, map_id):
 #
 #     compare_states(state, py_state)
 
-
-def test_move_sequence_one_player(docker_server, game_server, map_id):
-    token, _ = add_player(docker_server, game_server, map_id, 'player')
-
-    # commented lines - forces test (with particular random seed) to break due to a wierd bug in the c++ solution
-    # uncommented lines doesn't break the test,
-    # because they have a slightly different mechanism to get a random direction
-    # uncomment this to break the test:
-
-    # valid_directions = ['R', 'L', 'U', 'D']
-    # max_index = len(valid_directions) - 1
-    # random.seed(136)    # This particular seed brakes the actual server on 10th step (py-server works as expected)
-
-    for i in range(0, 10):
-        direction = Direction.random_str()
-        # also to break the test comment the line above and uncomment the following:
-        # direction = valid_directions[random.randint(0, max_index)]
-
-        move_players(docker_server, game_server, token, direction)
-
-        ticks = random.randint(10, 10000)
-        tick_both(docker_server, game_server, ticks)
-
-        state, py_state = get_states(docker_server, game_server, token)
-
-        compare_states(state, py_state)
-
-
-@pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
-@pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
-def test_two_players_turns(docker_server, game_server, direction_1, direction_2, map_id):
-    docker_server = docker_server
-    token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
-    token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
-
-    move_players(docker_server, game_server, token_1, direction_1)
-    move_players(docker_server, game_server, token_2, direction_2)
-
-    state_1, py_state_1 = get_states(docker_server, game_server, token_1)
-    state_2, py_state_2 = get_states(docker_server, game_server, token_2)
-
-    compare_states(state_1, py_state_1)
-    compare_states(state_2, py_state_2)
-
 #
-# @pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
-# def test_two_players_small_move(docker_server, game_server, map_id, ticks: int):
+# def test_move_sequence_one_player(docker_server, game_server, map_id):
+#     token, _ = add_player(docker_server, game_server, map_id, 'player')
+#
+#     # commented lines - forces test (with particular random seed) to break due to a wierd bug in the c++ solution
+#     # uncommented lines doesn't break the test,
+#     # because they have a slightly different mechanism to get a random direction
+#     # uncomment this to break the test:
+#
+#     # valid_directions = ['R', 'L', 'U', 'D']
+#     # max_index = len(valid_directions) - 1
+#     # random.seed(136)    # This particular seed brakes the actual server on 10th step (py-server works as expected)
+#
+#     for i in range(0, 10):
+#         direction = Direction.random_str()
+#         # also to break the test comment the line above and uncomment the following:
+#         # direction = valid_directions[random.randint(0, max_index)]
+#
+#         move_players(docker_server, game_server, token, direction)
+#
+#         ticks = random.randint(10, 10000)
+#         tick_both(docker_server, game_server, ticks)
+#
+#         state, py_state = get_states(docker_server, game_server, token)
+#
+#         compare_states(state, py_state)
+#
+#
+# @pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
+# @pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
+# def test_two_players_turns(docker_server, game_server, direction_1, direction_2, map_id):
+#     docker_server = docker_server
+#     token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
+#     token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
+#
+#     move_players(docker_server, game_server, token_1, direction_1)
+#     move_players(docker_server, game_server, token_2, direction_2)
+#
+#     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
+#     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
+#
+#     compare_states(state_1, py_state_1)
+#     compare_states(state_2, py_state_2)
+#
+# #
+# # @pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
+# # def test_two_players_small_move(docker_server, game_server, map_id, ticks: int):
+# #     token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
+# #     token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
+# #     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
+# #     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
+# #
+# #     compare_states(state_1, py_state_1)
+# #     compare_states(state_2, py_state_2)
+# #
+# #     direction_1 = Direction.random_str()
+# #     move_players(docker_server, game_server, token_1, direction_1)
+# #
+# #     direction_2 = Direction.random_str()
+# #     move_players(docker_server, game_server, token_2, direction_2)
+# #
+# #     tick_both(docker_server, game_server, ticks)
+# #
+# #     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
+# #     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
+# #
+# #     compare_states(state_1, py_state_1)
+# #     compare_states(state_2, py_state_2)
+# #
+# #
+# # @pytest.mark.randomize(min_num=250, max_num=10000, ncalls=3)
+# # def test_two_players_big_move(docker_server, game_server, map_id, ticks: int):
+# #     token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
+# #     token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
+# #     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
+# #     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
+# #
+# #     compare_states(state_1, py_state_1)
+# #     compare_states(state_2, py_state_2)
+# #
+# #     direction_1 = Direction.random_str()
+# #     move_players(docker_server, game_server, token_1, direction_1)
+# #
+# #     direction_2 = Direction.random_str()
+# #     move_players(docker_server, game_server, token_2, direction_2)
+# #
+# #     tick_both(docker_server, game_server, ticks)
+# #     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
+# #     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
+# #
+# #     compare_states(state_1, py_state_1)
+# #     compare_states(state_2, py_state_2)
+#
+#
+# def test_two_players_sequences(docker_server, game_server, map_id):
 #     token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
 #     token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
 #     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
@@ -224,66 +272,18 @@ def test_two_players_turns(docker_server, game_server, direction_1, direction_2,
 #     compare_states(state_1, py_state_1)
 #     compare_states(state_2, py_state_2)
 #
-#     direction_1 = Direction.random_str()
-#     move_players(docker_server, game_server, token_1, direction_1)
+#     for _ in range(0, 10):
+#         direction_1 = Direction.random_str()
+#         move_players(docker_server, game_server, token_1, direction_1)
 #
-#     direction_2 = Direction.random_str()
-#     move_players(docker_server, game_server, token_2, direction_2)
+#         direction_2 = Direction.random_str()
+#         move_players(docker_server, game_server, token_2, direction_2)
 #
-#     tick_both(docker_server, game_server, ticks)
+#         ticks = random.randint(0, 10000)
+#         tick_both(docker_server, game_server, ticks)
 #
-#     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
-#     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
+#         state_1, py_state_1 = get_states(docker_server, game_server, token_1)
+#         state_2, py_state_2 = get_states(docker_server, game_server, token_2)
 #
-#     compare_states(state_1, py_state_1)
-#     compare_states(state_2, py_state_2)
-#
-#
-# @pytest.mark.randomize(min_num=250, max_num=10000, ncalls=3)
-# def test_two_players_big_move(docker_server, game_server, map_id, ticks: int):
-#     token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
-#     token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
-#     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
-#     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
-#
-#     compare_states(state_1, py_state_1)
-#     compare_states(state_2, py_state_2)
-#
-#     direction_1 = Direction.random_str()
-#     move_players(docker_server, game_server, token_1, direction_1)
-#
-#     direction_2 = Direction.random_str()
-#     move_players(docker_server, game_server, token_2, direction_2)
-#
-#     tick_both(docker_server, game_server, ticks)
-#     state_1, py_state_1 = get_states(docker_server, game_server, token_1)
-#     state_2, py_state_2 = get_states(docker_server, game_server, token_2)
-#
-#     compare_states(state_1, py_state_1)
-#     compare_states(state_2, py_state_2)
-
-
-def test_two_players_sequences(docker_server, game_server, map_id):
-    token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
-    token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
-    state_1, py_state_1 = get_states(docker_server, game_server, token_1)
-    state_2, py_state_2 = get_states(docker_server, game_server, token_2)
-
-    compare_states(state_1, py_state_1)
-    compare_states(state_2, py_state_2)
-
-    for _ in range(0, 10):
-        direction_1 = Direction.random_str()
-        move_players(docker_server, game_server, token_1, direction_1)
-
-        direction_2 = Direction.random_str()
-        move_players(docker_server, game_server, token_2, direction_2)
-
-        ticks = random.randint(0, 10000)
-        tick_both(docker_server, game_server, ticks)
-
-        state_1, py_state_1 = get_states(docker_server, game_server, token_1)
-        state_2, py_state_2 = get_states(docker_server, game_server, token_2)
-
-        compare_states(state_1, py_state_1)
-        compare_states(state_2, py_state_2)
+#         compare_states(state_1, py_state_1)
+#         compare_states(state_2, py_state_2)
