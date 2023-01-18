@@ -116,11 +116,16 @@ class PortIsAllocated(ServerException):
 class CppServer:
 
     def __init__(self, server_domain: str, port: [str, int] = '8080', image: str = None, **extra_kwargs):
-
+        self.url = f'http://{server_domain}:{port}'
         self.port = port
+        if image is None:
+            image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
+
+        if image is None:
+            return
+
         client = docker.from_env()
         inspector = docker.APIClient()
-
         docker_network = os.environ.get('DOCKER_NETWORK')
 
         kwargs = {
@@ -130,38 +135,35 @@ class CppServer:
 
         if docker_network:
             kwargs['network'] = docker_network
+        if server_domain != '127.0.0.1':
+            kwargs['name'] = 'hopeful_jepsen'
 
-        if image is None:
-            image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
-        while image is not None:
-            try:
-                self.container = client.containers.run(image, **kwargs)
-                pattern = '[Ss]erver (has )?started'
+        try:
+            self.container = client.containers.run(image, **kwargs)
+            pattern = '[Ss]erver (has )?started'
+            logs = self.container.logs().decode()
+            start_time = time.time()
+            while re.search(pattern, logs) is None:
+                time.sleep(1)
                 logs = self.container.logs().decode()
-                start_time = time.time()
-                while re.search(pattern, logs) is None:
-                    time.sleep(1)
-                    logs = self.container.logs().decode()
-                    current_time = time.time()
-                    if current_time - start_time >= 3:
-                        raise Exception({'message': 'Cannot get the right start phrase from the container.',
-                                         'logs': logs})
-                if server_domain != '127.0.0.1':
-                    server_domain = inspector.inspect_container(self.container.id)['Name'][1:]
-                else:
-                    server_domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
+                current_time = time.time()
+                if current_time - start_time >= 3:
+                    raise Exception({'message': 'Cannot get the right start phrase from the container.',
+                                     'logs': logs})
 
-                self.url = f'http://{server_domain}:{port}'
+            if server_domain != '127.0.0.1':
+                server_domain = inspector.inspect_container(self.container.id)['Name'][1:]
+            else:
+                server_domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
 
-                break
+            self.url = f'http://{server_domain}:{port}'
 
-            except docker.errors.APIError as ex:
-                self.container = None
-                raise
-            except KeyboardInterrupt:
-                self.container = None
-                return
-        # self.url = f'http://{domain}:{bind_port}'
+        except docker.errors.APIError:
+            self.container = None
+            raise
+        except KeyboardInterrupt:
+            self.container = None
+            return
 
         self.cursor = 0
 
