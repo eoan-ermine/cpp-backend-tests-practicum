@@ -115,27 +115,26 @@ class PortIsAllocated(ServerException):
 
 class CppServer:
 
-    def __init__(self, domain: str, port: [str, int] = '8080', image: str = None, **kwargs):
+    def __init__(self, server_domain: str, port: [str, int] = '8080', image: str = None, **extra_kwargs):
 
         self.port = port
         client = docker.from_env()
 
-        server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-        server_port = os.environ.get('SERVER_PORT', '8080')
         docker_network = os.environ.get('DOCKER_NETWORK')
-        bind_port = '8080'
 
         kwargs = {
             'detach': True,
             'auto_remove': True,
-            # 'ports': {f"{server_port}/tcp": bind_port},
         }
-        server_domain += '_' + bind_port
 
         if docker_network:
             kwargs['network'] = docker_network
         if server_domain != '127.0.0.1':
+            if 'worker_id' in extra_kwargs:
+                server_domain += f'_{extra_kwargs["worker_id"]}'
             kwargs['name'] = server_domain
+        else:
+            kwargs['ports'] = {f"{port}/tcp": port}
 
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
@@ -148,9 +147,7 @@ class CppServer:
                 start_time = time.time()
                 while re.search(pattern, logs) is None:
                     time.sleep(1)
-                    logging.debug(logs)
                     logs = self.container.logs().decode()
-                    print(logs)
                     current_time = time.time()
                     if current_time - start_time >= 3:
                         raise Exception({'message': 'Cannot get the right start phrase from the container.',
