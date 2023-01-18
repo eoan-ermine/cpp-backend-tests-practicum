@@ -119,6 +119,7 @@ class CppServer:
 
         self.port = port
         client = docker.from_env()
+        inspector = docker.APIClient()
 
         docker_network = os.environ.get('DOCKER_NETWORK')
 
@@ -129,19 +130,19 @@ class CppServer:
 
         if docker_network:
             kwargs['network'] = docker_network
-        if server_domain != '127.0.0.1':
-            if 'worker_id' in extra_kwargs:
-                server_domain += f'_{extra_kwargs["worker_id"]}'
-            kwargs['name'] = server_domain
-        else:
-            kwargs['ports'] = {f"{port}/tcp": port}
+        # if server_domain != '127.0.0.1':
+        #     if 'worker_id' in extra_kwargs:
+        #         server_domain += f'_{extra_kwargs["worker_id"]}'
+        #     kwargs['name'] = server_domain
+
 
         if image is None:
             image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
         while image is not None:
             try:
                 self.container = client.containers.run(image, **kwargs)
-
+                if server_domain == '127.0.0.1':
+                    print(server_domain)
                 pattern = '[Ss]erver (has )?started'
                 logs = self.container.logs().decode()
                 start_time = time.time()
@@ -152,6 +153,8 @@ class CppServer:
                     if current_time - start_time >= 3:
                         raise Exception({'message': 'Cannot get the right start phrase from the container.',
                                          'logs': logs})
+
+                server_domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
                 self.url = f'http://{server_domain}:{port}'
 
                 break

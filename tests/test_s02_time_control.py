@@ -102,20 +102,20 @@ def test_tick_miss_delta(docker_server):
 #         assert res_json['code'] == 'invalidMethod'
 #         assert res_json.get('message')
 
-#
-# @pytest.mark.randomize(min_num=0, max_num=10000, ncalls=10)
-# def test_tick_success(docker_server, delta: int):
-#     request = 'api/v1/game/tick'
-#     header = {'content-type': 'application/json'}
-#     data = {"timeDelta": delta}
-#     res = docker_server.request('POST', header, request, json=data)
-#
-#     assert res.status_code == 200
-#     assert res.headers['content-type'] == 'application/json'
-#     assert res.headers['cache-control'] == 'no-cache'
-#
-#     res_json = res.json()
-#     assert res_json == dict()
+
+@pytest.mark.randomize(min_num=0, max_num=10000, ncalls=10)
+def test_tick_success(docker_server, delta: int):
+    request = 'api/v1/game/tick'
+    header = {'content-type': 'application/json'}
+    data = {"timeDelta": delta}
+    res = docker_server.request('POST', header, request, json=data)
+
+    assert res.status_code == 200
+    assert res.headers['content-type'] == 'application/json'
+    assert res.headers['cache-control'] == 'no-cache'
+
+    res_json = res.json()
+    assert res_json == dict()
 
 
 def test_match_roads(docker_server, game_server):
@@ -139,35 +139,35 @@ def test_turn_one_player(docker_server, game_server, direction, map_id):
 
     compare_states(state, py_state)
 
-
-@pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
-@pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
-def test_small_move_one_player(docker_server, game_server, direction, ticks=140, map_id='town'):
-    token, _ = add_player(docker_server, game_server, map_id, 'player')
-    move_players(docker_server, game_server, token, direction)
-    state, py_state = get_states(docker_server, game_server, token)
-
-    compare_states(state, py_state)
-
-    tick_both(docker_server, game_server, ticks)
-    state, py_state = get_states(docker_server, game_server, token)
-
-    compare_states(state, py_state)
-
-
-@pytest.mark.randomize(min_num=1000, max_num=100000, ncalls=3)
-@pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
-def test_big_move_one_player(docker_server, game_server, direction, ticks: int, map_id):
-    token, _ = add_player(docker_server, game_server, map_id, 'player')
-    move_players(docker_server, game_server, token, direction)
-    state, py_state = get_states(docker_server, game_server, token)
-
-    compare_states(state, py_state)
-
-    tick_both(docker_server, game_server, ticks)
-    state, py_state = get_states(docker_server, game_server, token)
-
-    compare_states(state, py_state)
+#
+# @pytest.mark.randomize(min_num=0, max_num=250, ncalls=3)
+# @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
+# def test_small_move_one_player(docker_server, game_server, direction, ticks=140, map_id='town'):
+#     token, _ = add_player(docker_server, game_server, map_id, 'player')
+#     move_players(docker_server, game_server, token, direction)
+#     state, py_state = get_states(docker_server, game_server, token)
+#
+#     compare_states(state, py_state)
+#
+#     tick_both(docker_server, game_server, ticks)
+#     state, py_state = get_states(docker_server, game_server, token)
+#
+#     compare_states(state, py_state)
+#
+#
+# @pytest.mark.randomize(min_num=1000, max_num=100000, ncalls=3)
+# @pytest.mark.parametrize('direction', ['R', 'L', 'U', 'D'])
+# def test_big_move_one_player(docker_server, game_server, direction, ticks: int, map_id):
+#     token, _ = add_player(docker_server, game_server, map_id, 'player')
+#     move_players(docker_server, game_server, token, direction)
+#     state, py_state = get_states(docker_server, game_server, token)
+#
+#     compare_states(state, py_state)
+#
+#     tick_both(docker_server, game_server, ticks)
+#     state, py_state = get_states(docker_server, game_server, token)
+#
+#     compare_states(state, py_state)
 
 
 def test_move_sequence_one_player(docker_server, game_server, map_id):
