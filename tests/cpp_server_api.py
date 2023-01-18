@@ -150,7 +150,7 @@ class CppServer:
                 if current_time - start_time >= 3:
                     raise Exception({'message': 'Cannot get the right start phrase from the container.',
                                      'logs': logs})
-
+            self.container.rename('new_name')
             if server_domain != '127.0.0.1':
                 server_domain = inspector.inspect_container(self.container.id)['Name'][1:]
             else:
