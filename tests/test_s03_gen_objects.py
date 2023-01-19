@@ -89,15 +89,15 @@ def add_user_and_wait_loot(docker_server, name, map_id):
 
 
 @pytest.mark.parametrize('method', ['HEAD', 'GET'])
-def test_state_success(server_one_test, method, map_dict):
+def test_state_success(docker_server, method, map_dict):
     map_id = map_dict['id']
 
     for i, name in enumerate(['user1', 'user2']):
-        token = add_user_and_wait_loot(server_one_test, name, map_id)
+        token = add_user_and_wait_loot(docker_server, name, map_id)
 
         request = 'api/v1/game/state'
         header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
-        res = server_one_test.request(method, header, request)
+        res = docker_server.request(method, header, request)
 
         assert res.status_code == 200
         assert res.headers['content-type'] == 'application/json'
