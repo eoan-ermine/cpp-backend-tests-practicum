@@ -1,16 +1,17 @@
 import logging
 import time
 
-import docker.errors
-
 from cpp_server_api import CppServer
 import math
 import random
 import pytest
 import os
 import logging
+import re
 
 import requests
+import docker
+import docker.errors
 
 from game_server import Direction
 from dataclasses import dataclass
@@ -45,22 +46,6 @@ def flush_db(db_name):
     conn.close()
 
 
-def find_open_ports():
-    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
-    ports = []
-    for port in range(8080, 8081):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            try:
-                sock.bind((server_domain, port))
-                ports.append(port)
-            except OSError:
-                continue
-    return ports
-
-
-global_ports_list = find_open_ports()
-
-
 @pytest.fixture(scope='function')
 def postgres_server():
 
@@ -70,51 +55,46 @@ def postgres_server():
     password = os.environ.get('POSTGRES_PASSWORD', 'Mys3Cr3t')
     host = os.environ.get('POSTGRES_HOST', '172.17.0.2')
     postgres_port = os.environ.get('POSTGRES_PORT', '5432')
+    docker_network = os.environ.get('DOCKER_NETWORK')
 
-    is_running = False
-    # global ports_list
-    ports_list = [port for port in range(49001, 49150)]
-    while not is_running:
-        if len(ports_list) < 0:
-            ports_list = find_open_ports()
-        try:
-            port_number = random.randint(0, len(ports_list))
-            port = ports_list[port_number]
-            ports_list.pop(port_number)
-            db_name = f'db_for_port{port}'
-            flush_db(db_name)
-            args = {
-                'environment': {
-                    'GAME_DB_URL': f'postgres://{user}:{password}@{host}:{postgres_port}/{db_name}'
-                    }
-            }
-            server = Server(server_domain, port, image_name, **args)
-            return server
-            # ports_list.append(port)
-            # print('Ports: ', ports_list)
-            # server.container.stop()
+    client = docker.from_env()
+    inspector = docker.APIClient()
+    container = client.containers.create(image_name)
+    name = inspector.inspect_container(container.id)['Name'][1:]
+    print(name)
+    inspector.remove_container(container.id)
+    flush_db(name)
 
-        except docker.errors.APIError:
-            # print('Port was busy')
-            ports_list = find_open_ports()
+    kwargs = {
+        'detach': True,
+        'auto_remove': False,
+        'environment': {
+            'GAME_DB_URL': f'postgres://{user}:{password}@{host}:{postgres_port}/{name}'
+        },
+        'name': name
+    }
+    if docker_network:
+        kwargs['network'] = docker_network
 
-            pass
-        except psycopg2.errors.UniqueViolation:
-            # print('Database was already exist')
-            ports_list = find_open_ports()
-
-            pass
-        except psycopg2.errors.ObjectInUse:
-            # print('Database was accessed by someone else then trying to drop')
-            ports_list = find_open_ports()
-
-            pass
-        except IndexError:
-            # print('Run out of ports')
-            ports_list = find_open_ports()
-        except KeyboardInterrupt:
-            pass
-            # print(ports_list)
+    container = client.containers.run(image_name, **kwargs)
+    pattern = '[Ss]erver (has )?started'
+    logs = container.logs().decode()
+    start_time = time.time()
+    while re.search(pattern, logs) is None:
+        time.sleep(1)
+        logs = container.logs().decode()
+        current_time = time.time()
+        if current_time - start_time >= 3:
+            raise Exception({'message': 'Cannot get the right start phrase from the container.',
+                             'logs': logs})
+    if docker_network:
+        server_domain = name
+    else:
+        server_domain = inspector.inspect_container(container.id)['NetworkSettings']['IPAddress']
+    server = Server(server_domain, '8080')
+    yield server
+    inspector.stop(container.id)
+    inspector.remove_container(container.id)
 
 
 def compare(records: List[dict], tribe_records: List[dict]):

@@ -145,9 +145,10 @@ class CppServer:
         try:
             if container_args:
                 self.container = client.containers.run(image, list(container_args), **kwargs)
-                # self.container = client.containers.run(image, **kwargs)
             else:
                 self.container = client.containers.run(image, **kwargs)
+            if self.container is None:
+                raise Exception('AAAAAAAAAAAAAAAAA IT\'S NONE')
             print(self.container.logs())
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
