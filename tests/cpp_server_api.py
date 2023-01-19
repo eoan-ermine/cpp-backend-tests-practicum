@@ -120,6 +120,7 @@ class CppServer:
         self.port = port
 
         if image is None:
+            self.container = None
             return
 
         client = docker.from_env()
