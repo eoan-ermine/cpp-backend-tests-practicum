@@ -133,8 +133,8 @@ class CppServer:
             'auto_remove': True,
         }
 
-        if 'CONTAINER_ARGS' in extra_kwargs:
-            container_args = extra_kwargs.pop('CONTAINER_ARGS')
+        if 'container_args' in extra_kwargs:
+            container_args = extra_kwargs.pop('container_args')
         else:
             container_args = None
 
