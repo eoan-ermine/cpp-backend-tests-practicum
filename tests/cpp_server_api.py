@@ -146,6 +146,7 @@ class CppServer:
                 self.container = client.containers.run(image, list(container_args), **kwargs)
             else:
                 self.container = client.containers.run(image, **kwargs)
+            print(self.container.logs())
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
             start_time = time.time()
