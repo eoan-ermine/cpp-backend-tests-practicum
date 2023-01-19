@@ -95,7 +95,6 @@ def postgres_server():
     server.container = container
     yield server
     try:
-        inspector.stop(container.id)
         inspector.remove_container(container.id)
     except Exception:
         pass

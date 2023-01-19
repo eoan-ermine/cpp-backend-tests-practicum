@@ -188,7 +188,10 @@ class CppServer:
 
     def __del__(self):
         if self.container is not None:
-            self.container.stop()
+            try:
+                self.container.stop()
+            except docker.errors.NotFound:
+                pass
 
     def get_line(self):
         logs: str = self.container.logs().decode()
