@@ -92,9 +92,13 @@ def postgres_server():
     else:
         server_domain = inspector.inspect_container(container.id)['NetworkSettings']['IPAddress']
     server = Server(server_domain, '8080')
+    server.container = container
     yield server
-    inspector.stop(container.id)
-    inspector.remove_container(container.id)
+    try:
+        inspector.stop(container.id)
+        inspector.remove_container(container.id)
+    except Exception:
+        pass
 
 
 def compare(records: List[dict], tribe_records: List[dict]):
