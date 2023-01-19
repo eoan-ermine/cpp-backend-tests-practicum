@@ -127,8 +127,8 @@ class CppServer:
         docker_network = os.environ.get('DOCKER_NETWORK')
 
         kwargs = {
-            'detach': False,
-            'auto_remove': True,
+            'detach': True,
+            'auto_remove': False,
         }
 
         if 'container_args' in extra_kwargs:
@@ -144,6 +144,7 @@ class CppServer:
         try:
             if container_args:
                 self.container = client.containers.run(image, list(container_args), **kwargs)
+                # self.container = client.containers.run(image, **kwargs)
             else:
                 self.container = client.containers.run(image, **kwargs)
             print(self.container.logs())
