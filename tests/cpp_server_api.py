@@ -129,7 +129,7 @@ class CppServer:
 
         kwargs = {
             'detach': True,
-            'auto_remove': False,
+            'auto_remove': True,
         }
 
         if 'container_args' in extra_kwargs:
