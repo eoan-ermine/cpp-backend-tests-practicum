@@ -120,8 +120,6 @@ class CppServer:
         self.port = port
 
         if image is None:
-            image = os.environ.get('IMAGE_NAME')    # If it's not given, trying to find it as env variable
-        if image is None:
             return
 
         client = docker.from_env()
@@ -158,7 +156,6 @@ class CppServer:
                 if current_time - start_time >= 3:
                     raise Exception({'message': 'Cannot get the right start phrase from the container.',
                                      'logs': logs})
-            print(inspector.inspect_container(self.container.id))
             name = inspector.inspect_container(self.container.id)['Name'][1:]
             self.container.rename(name[:-1])
             self.container.rename(name)
