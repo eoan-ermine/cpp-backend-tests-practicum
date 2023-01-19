@@ -115,7 +115,7 @@ class PortIsAllocated(ServerException):
 
 class CppServer:
 
-    def __init__(self, server_domain: str, port: [str, int] = '8080', image: str = None):
+    def __init__(self, server_domain: str, port: [str, int] = '8080', image: str = None, **extra_kwargs):
         self.url = f'http://{server_domain}:{port}'
         self.port = port
 
@@ -133,11 +133,18 @@ class CppServer:
             'auto_remove': True,
         }
 
+        if 'CONTAINER_ARGS' in extra_kwargs:
+            container_args = extra_kwargs.pop('CONTAINER_ARGS')
+        else:
+            container_args = None
+
         if docker_network:
             kwargs['network'] = docker_network
 
+        kwargs.update(extra_kwargs)
+
         try:
-            self.container = client.containers.run(image, **kwargs)
+            self.container = client.containers.run(image, container_args, **kwargs)
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
             start_time = time.time()

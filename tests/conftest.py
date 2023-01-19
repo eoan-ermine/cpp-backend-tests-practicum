@@ -86,7 +86,15 @@ def docker_server():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     image_name = os.environ['IMAGE_NAME']
     port = os.environ.get('SERVER_PORT', '8080')
-    server = Server(server_domain, port, image_name)
+
+    extra_kwargs = {}
+
+    if 'ENTRYPOINT' in os.environ:
+        extra_kwargs['entrypoint'] = os.environ['ENTRYPOINT']
+    if 'CONTAINER_ARGS' in os.environ:
+        extra_kwargs['container_args'] = os.environ['CONTAINER_ARGS'].split(' ')
+    server = Server(server_domain, port, image_name, **extra_kwargs)
+
     return server
 
 
