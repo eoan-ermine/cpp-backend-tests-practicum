@@ -127,7 +127,7 @@ class CppServer:
         docker_network = os.environ.get('DOCKER_NETWORK')
 
         kwargs = {
-            'detach': True,
+            'detach': False,
             'auto_remove': True,
         }
 
