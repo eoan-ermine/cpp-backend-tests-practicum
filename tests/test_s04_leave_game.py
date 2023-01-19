@@ -73,8 +73,8 @@ def postgres_server():
         },
         'name': name
     }
-    # if docker_network:
-    #     kwargs['network'] = docker_network
+    if docker_network:
+        kwargs['network'] = docker_network
 
     container = client.containers.run(image_name, **kwargs)
     pattern = '[Ss]erver (has )?started'
