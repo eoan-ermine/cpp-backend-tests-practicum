@@ -144,7 +144,10 @@ class CppServer:
         kwargs.update(extra_kwargs)
 
         try:
-            self.container = client.containers.run(image, list(container_args), **kwargs)
+            if container_args:
+                self.container = client.containers.run(image, list(container_args), **kwargs)
+            else:
+                self.container = client.containers.run(image, **kwargs)
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
             start_time = time.time()
