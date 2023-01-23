@@ -200,7 +200,6 @@ def test_move_sequence_one_player(docker_server, game_server, map_id):
 @pytest.mark.parametrize('direction_1', ['R', 'L', 'U', 'D'])
 @pytest.mark.parametrize('direction_2', ['R', 'L', 'U', 'D'])
 def test_two_players_turns(docker_server, game_server, direction_1, direction_2, map_id):
-    docker_server = docker_server
     token_1, _ = add_player(docker_server, game_server, map_id, 'Player 1')
     token_2, _ = add_player(docker_server, game_server, map_id, 'Player 2')
 
@@ -271,7 +270,7 @@ def test_two_players_sequences(docker_server, game_server, map_id):
 
     compare_states(state_1, py_state_1)
     compare_states(state_2, py_state_2)
-
+    random.seed(55463)
     for _ in range(0, 10):
         direction_1 = Direction.random_str()
         move_players(docker_server, game_server, token_1, direction_1)
