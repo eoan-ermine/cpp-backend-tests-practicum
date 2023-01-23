@@ -148,8 +148,7 @@ class CppServer:
             else:
                 self.container = client.containers.run(image, **kwargs)
             if self.container is None:
-                raise Exception('AAAAAAAAAAAAAAAAA IT\'S NONE')
-            print(self.container.logs())
+                raise Exception('Container does not exist')
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
             start_time = time.time()
