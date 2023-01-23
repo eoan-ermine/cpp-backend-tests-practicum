@@ -199,8 +199,8 @@ def validate_ok_response(res: requests.Response):
 def get_records(server, start: int = 0, max_items: int = 100) -> list:
     request = '/api/v1/game/records'
     header = {'content-type': 'application/json'}
-    params = {'start': start, 'maxItems': max_items}
-    res: requests.Response = server.request('GET', header, request, params=params)
+    url_params = {'start': start, 'maxItems': max_items}
+    res: requests.Response = server.request('GET', header, request, params=url_params)
     validate_ok_response(res)
     res_json: list = res.json()
     assert type(res_json) == list
