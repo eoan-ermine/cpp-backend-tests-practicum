@@ -2,6 +2,7 @@ import json
 import os
 import re
 import time
+import typing
 
 import docker
 import docker.errors
@@ -113,7 +114,11 @@ class PortIsAllocated(ServerException):
 
 class CppServer:
 
-    def __init__(self, server_domain: str, port: [str, int] = '8080', image: str = None, **extra_kwargs):
+    def __init__(self,
+                 server_domain: str,
+                 port: Union[str, int] = '8080',
+                 image: Optional[str] = None,
+                 **extra_kwargs):
         self.url = f'http://{server_domain}:{port}'
         self.port = port
 
