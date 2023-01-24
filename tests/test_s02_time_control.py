@@ -173,6 +173,7 @@ def test_big_move_one_player(docker_server, game_server, direction, ticks: int, 
 def test_move_sequence_one_player(docker_server, game_server, map_id):
     token, _ = add_player(docker_server, game_server, map_id, 'player')
 
+    random.seed(345612)
     for i in range(0, 10):
         direction = Direction.random_str()
         move_players(docker_server, game_server, token, direction)
@@ -208,6 +209,8 @@ def test_two_players_small_move(docker_server, game_server, map_id, ticks: int):
     compare_states(state_1, py_state_1)
     compare_states(state_2, py_state_2)
 
+    random.seed(65487473)
+
     direction_1 = Direction.random_str()
     move_players(docker_server, game_server, token_1, direction_1)
 
@@ -232,6 +235,8 @@ def test_two_players_big_move(docker_server, game_server, map_id, ticks: int):
 
     compare_states(state_1, py_state_1)
     compare_states(state_2, py_state_2)
+
+    random.seed(9124983237)
 
     direction_1 = Direction.random_str()
     move_players(docker_server, game_server, token_1, direction_1)
