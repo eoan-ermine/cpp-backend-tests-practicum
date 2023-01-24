@@ -173,27 +173,12 @@ def test_big_move_one_player(docker_server, game_server, direction, ticks: int, 
 def test_move_sequence_one_player(docker_server, game_server, map_id):
     token, _ = add_player(docker_server, game_server, map_id, 'player')
 
-    # commented lines - forces test (with particular random seed) to break due to a wierd bug in the c++ solution
-    # uncommented lines doesn't break the test,
-    # because they have a slightly different mechanism to get a random direction
-    # uncomment this to break the test:
-
-    # valid_directions = ['R', 'L', 'U', 'D']
-    # max_index = len(valid_directions) - 1
-    # random.seed(136)    # This particular seed brakes the actual server on 10th step (py-server works as expected)
-
     for i in range(0, 10):
         direction = Direction.random_str()
-        # also to break the test comment the line above and uncomment the following:
-        # direction = valid_directions[random.randint(0, max_index)]
-
         move_players(docker_server, game_server, token, direction)
-
         ticks = random.randint(10, 10000)
         tick_both(docker_server, game_server, ticks)
-
         state, py_state = get_states(docker_server, game_server, token)
-
         compare_states(state, py_state)
 
 

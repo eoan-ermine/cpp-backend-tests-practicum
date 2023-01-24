@@ -65,11 +65,9 @@ bad_request = {
 
 def test_logs(docker_server):
     log_json = docker_server.get_log()
-    # assert log_json['message'] == 'Server has started...'
     pattern = '[Ss]erver (has )?started'
     search = re.search(pattern, log_json['message'])
     assert len(search.groups()) == 1
-    # assert log_json['message'] == 'server started'
     assert log_json['data']['port'] == 8080
     assert log_json['data']['address'] == '0.0.0.0'
     request = 'images/cube.svg'

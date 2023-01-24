@@ -1,13 +1,11 @@
-import logging
 import time
 
-from cpp_server_api import CppServer
 import math
 import random
 import pytest
 import os
-import logging
 import re
+import json
 
 import requests
 import docker
@@ -21,11 +19,6 @@ from cpp_server_api import CppServer as Server
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import psycopg2.errors
-
-from xprocess import ProcessStarter
-from contextlib import contextmanager
-
-import socket
 
 
 def get_connection(db_name):
@@ -49,7 +42,6 @@ def flush_db(db_name):
 @pytest.fixture(scope='function')
 def postgres_server():
 
-    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     image_name = os.environ.get('IMAGE_NAME')
     user = os.environ.get('POSTGRES_USER', 'postgres')
     password = os.environ.get('POSTGRES_PASSWORD', 'Mys3Cr3t')
@@ -61,7 +53,6 @@ def postgres_server():
     inspector = docker.APIClient()
     container = client.containers.create(image_name)
     name = inspector.inspect_container(container.id)['Name'][1:]
-    print(name)
     inspector.remove_container(container.id)
     flush_db(name)
 
@@ -150,8 +141,6 @@ class Tribe:
         for pl in self.players:
             pl.add_time(time_to_add)
 
-    # def
-
     def get_list(self) -> list:
         self.players.sort(key=lambda x: x.score, reverse=True)
         res = [pl.get_dict() for pl in self.players]
@@ -168,7 +157,7 @@ class Tribe:
             self.server.move(pl.token, direction)
 
     def randomized_move(self):
-        r_time = get_retirement_time(self.server)
+        r_time = get_retirement_time()
         self.randomized_turn()
         ticks = random.randint(100, min(10000, int(r_time*900)))
         seconds = ticks / 1000
@@ -180,9 +169,14 @@ class Tribe:
             self.server.move(pl.token, '')
 
 
-def get_retirement_time(server) -> float:
-    # How can it be extracted?
-    return 15.0
+def get_retirement_time() -> float:
+    try:
+        config_file = os.environ['CONFIG_PATH']
+        with open(config_file) as file:
+            config = json.load(file)
+        return config['dogRetirementTime']
+    except Exception:
+        return 15.0    # Default value
 
 
 def tick_seconds(server, seconds: float):
@@ -215,10 +209,10 @@ def test_clean_records(postgres_server):
 
 def test_retirement_one_standing_player(postgres_server, map_id):
     token, player_id = postgres_server.join('Julius Can', map_id)
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
     postgres_server.get_state(token)  # To ensure that the game is joined, so the validation will be passed
     tick_seconds(postgres_server, r_time - 0.001)
-    postgres_server.get_state(token)  # To ensure that the game is joined, so the validation will be passed
+    postgres_server.get_state(token)  # It should be still here for 0.001 more seconds
     tick_seconds(postgres_server, 0.001)
 
     request = '/api/v1/game/state'
@@ -235,7 +229,7 @@ def test_retirement_one_standing_player(postgres_server, map_id):
 
 def test_retirement_one_player(postgres_server, map_id):
     token, player_id = postgres_server.join('Julius Can', map_id)
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
     postgres_server.get_state(token)  # To ensure that the game is joined, so the validation will be passed
 
     for _ in range(100):
@@ -262,7 +256,7 @@ def test_retirement_one_player(postgres_server, map_id):
 
 def test_a_few_zero_records(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id)
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
     tribe.update_scores()
     tick_seconds(postgres_server, r_time)
     tribe.add_time(r_time)
@@ -273,7 +267,7 @@ def test_a_few_zero_records(postgres_server, map_id):
 
 def test_a_few_records(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id)
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
 
     for _ in range(0, random.randint(100, 350)):
         tribe.randomized_move()
@@ -290,7 +284,7 @@ def test_a_few_records(postgres_server, map_id):
 
 def test_old_young_tribes_records(postgres_server, map_id):
     old_tribe = Tribe(postgres_server, map_id, prefix='Elder')
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
 
     for _ in range(0, random.randint(50, 200)):
         old_tribe.randomized_move()
@@ -322,10 +316,9 @@ def test_old_young_tribes_records(postgres_server, map_id):
     compare(records, tribe_records)
 
 
-
 def test_a_hundred_records(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id, num_of_players=100)
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
 
     for _ in range(0, random.randint(10, 35)):
         tribe.randomized_move()
@@ -341,10 +334,9 @@ def test_a_hundred_records(postgres_server, map_id):
     compare(records, tribe_records)
 
 
-
 def test_a_hundred_plus_records(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id, num_of_players=150)
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
     for _ in range(0, random.randint(10, 35)):
         tribe.randomized_move()
     tribe.update_scores()
@@ -360,7 +352,7 @@ def test_a_hundred_plus_records(postgres_server, map_id):
 
 def test_two_sequential_tribes_records(postgres_server, map_id):
     red_foxes = Tribe(postgres_server, map_id, num_of_players=50, prefix='Red fox')
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
 
     for _ in range(0, random.randint(10, 35)):
         red_foxes.randomized_move()
@@ -394,7 +386,7 @@ def test_two_sequential_tribes_records(postgres_server, map_id):
 
 def test_reload_server(postgres_server, map_id):
     tribe = Tribe(postgres_server, map_id, num_of_players=50)
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
     for _ in range(0, random.randint(10, 35)):
         tribe.randomized_move()
     tribe.update_scores()
@@ -419,7 +411,7 @@ def test_reload_server(postgres_server, map_id):
 def test_a_records_selection(postgres_server, map_id, start: int, max_items: int, extra_players: int):
     tribe = Tribe(postgres_server, map_id, num_of_players=start + extra_players)
 
-    r_time = get_retirement_time(postgres_server)
+    r_time = get_retirement_time()
 
     for _ in range(0, random.randint(5, 15)):
         tribe.randomized_move()
@@ -433,9 +425,6 @@ def test_a_records_selection(postgres_server, map_id, start: int, max_items: int
     end = min(start + extra_players, start + max_items)
     tribe_records = tribe.get_list()[start:end]
     records = get_records(postgres_server, start, max_items)
-    print(records)
-    print(tribe_records)
 
-
-    # compare(records, tribe_records)
+    compare(records, tribe_records)
 

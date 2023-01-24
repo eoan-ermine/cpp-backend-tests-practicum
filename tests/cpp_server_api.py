@@ -1,9 +1,7 @@
 import json
 import os
-import random
 import re
 import time
-import logging
 
 import docker
 import docker.errors
@@ -209,7 +207,7 @@ class CppServer:
             if line is not None:
                 return json.loads(line)
             attempt += 1
-            time.sleep(0.1)
+            time.sleep(0.1)   # In case the server haven't posted logs yet, but will do it soon
         return None
 
     def request(self, method, header, url, **kwargs):
