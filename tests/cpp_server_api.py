@@ -200,11 +200,17 @@ class CppServer:
             self.cursor += 1
             return line
         except IndexError:
-
             return None
 
     def get_log(self):
-        return json.loads(self.get_line())
+        attempt = 1
+        while attempt <= 3:
+            line = self.get_line()
+            if line is not None:
+                return json.loads(line)
+            attempt += 1
+            time.sleep(0.1)
+        return None
 
     def request(self, method, header, url, **kwargs):
         try:
