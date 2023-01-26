@@ -179,8 +179,6 @@ class CppServer:
 
         except docker.errors.APIError:
             self.container = None
-        except KeyboardInterrupt:
-            self.container = None
 
         self.cursor = 0
 
