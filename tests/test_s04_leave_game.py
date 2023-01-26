@@ -176,7 +176,7 @@ def get_retirement_time() -> float:
             config = json.load(file)
         return config['dogRetirementTime']
     except Exception:
-        return 15.0    # Default value
+        return 60.0    # Значение по умолчанию из задания
 
 
 def tick_seconds(server, seconds: float):

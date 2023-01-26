@@ -2,7 +2,6 @@ import json
 import os
 import re
 import time
-import typing
 
 import docker
 import docker.errors
@@ -151,7 +150,7 @@ class CppServer:
             else:
                 self.container = client.containers.run(image, **kwargs)
             if self.container is None:
-                raise Exception('Container does not exist')
+                raise ServerException('Container does not exist', None)
             pattern = '[Ss]erver (has )?started'
             logs = self.container.logs().decode()
             start_time = time.time()
@@ -160,25 +159,28 @@ class CppServer:
                 logs = self.container.logs().decode()
                 current_time = time.time()
                 if current_time - start_time >= 3:
-                    raise Exception({'message': 'Cannot get the right start phrase from the container.',
-                                     'logs': logs})
-            name = inspector.inspect_container(self.container.id)['Name'][1:]
+                    raise ServerException('Cannot get the right start phrase from the container.', {'logs': logs})
+
+            # Для доступа в контейнер по имени нужно переприсвоить ему выданное (100% свободное уникальное) имя
+            name = inspector.inspect_container(self.container.id)['Name'][1:]  # Для этого вытаскиваем текущее имя
+            # Присваиваем имя на символ короче, чтобы не получить ошибку, что текущее имя уже занято
             self.container.rename(name[:-1])
-            self.container.rename(name)
+            self.container.rename(name)     # Присваиваем изначальное имя, чтобы иметь доступ по нему
 
             if server_domain != '127.0.0.1':
+                # Если работаем в сети докера - обращаемся по имени
                 server_domain = inspector.inspect_container(self.container.id)['Name'][1:]
             else:
+                # Иначе - по IP адресу контейнера
                 server_domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
 
+            # Переприсваиваем url для запросов
             self.url = f'http://{server_domain}:{port}'
 
         except docker.errors.APIError:
             self.container = None
-            raise
         except KeyboardInterrupt:
             self.container = None
-            return
 
         self.cursor = 0
 
