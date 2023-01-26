@@ -11,7 +11,6 @@ import requests
 from urllib.parse import urljoin
 from typing import Optional, Tuple, List, Union, Type, KeysView, Any
 
-
 class ServerException(Exception):
     def __init__(self, message: str, data: Any):
         super().__init__()
@@ -339,6 +338,7 @@ class CppServer:
     @staticmethod
     def validate_response(res: requests.Response):
         if res.status_code != 200:
+            print(res.status_code, res.content)
             raise BadRequest('Status code isn\'t OK', {'status code': res.status_code, 'response': res.content})
 
         CppServer.assert_fields('Response headers',

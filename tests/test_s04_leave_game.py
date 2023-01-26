@@ -15,10 +15,16 @@ from game_server import Direction
 from dataclasses import dataclass
 from typing import List
 from cpp_server_api import CppServer as Server
+from cpp_server_api import ServerException
 
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import psycopg2.errors
+
+from conftest import get_config, get_start_pattern
+
+
+DEFAULT_RETIREMENT_TIME = 60.0  # Значение по умолчанию из задания
 
 
 def get_connection(db_name):
@@ -68,7 +74,7 @@ def postgres_server():
         kwargs['network'] = docker_network
 
     container = client.containers.run(image_name, **kwargs)
-    pattern = '[Ss]erver (has )?started'
+    pattern = get_start_pattern()
     logs = container.logs().decode()
     start_time = time.time()
     while re.search(pattern, logs) is None:
@@ -76,8 +82,7 @@ def postgres_server():
         logs = container.logs().decode()
         current_time = time.time()
         if current_time - start_time >= 3:
-            raise Exception({'message': 'Cannot get the right start phrase from the container.',
-                             'logs': logs})
+            raise ServerException('Cannot get the right start phrase from the container.', {'logs': logs})
     if docker_network:
         server_domain = name
     else:
@@ -86,8 +91,9 @@ def postgres_server():
     server.container = container
     yield server
     try:
+        inspector.stop(container.id)
         inspector.remove_container(container.id)
-    except Exception:
+    except docker.errors.APIError:
         pass
 
 
@@ -171,12 +177,12 @@ class Tribe:
 
 def get_retirement_time() -> float:
     try:
-        config_file = os.environ['CONFIG_PATH']
-        with open(config_file) as file:
-            config = json.load(file)
+        config = get_config()
         return config['dogRetirementTime']
-    except Exception:
-        return 60.0    # Значение по умолчанию из задания
+    except KeyError:
+        return DEFAULT_RETIREMENT_TIME
+    except TypeError:
+        return DEFAULT_RETIREMENT_TIME
 
 
 def tick_seconds(server, seconds: float):
@@ -288,7 +294,6 @@ def test_old_young_tribes_records(postgres_server, map_id):
 
     for _ in range(0, random.randint(50, 200)):
         old_tribe.randomized_move()
-
     old_tribe.update_scores()
     tick_seconds(postgres_server, r_time / 2)
     old_tribe.add_time(r_time / 2)

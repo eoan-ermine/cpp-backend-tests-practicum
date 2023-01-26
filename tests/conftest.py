@@ -1,10 +1,8 @@
-import logging
 import os
 import json
-import time
+import pathlib
 
 import pytest
-import socket
 
 from xprocess import ProcessStarter
 from pathlib import Path
@@ -13,9 +11,10 @@ from typing import Set
 
 
 from cpp_server_api import CppServer as Server
-from cpp_server_api import PortIsAllocated
-import docker.errors
-import random
+from cpp_server_api import ServerException
+
+START_PATTERN = '[Ss]erver (has )?started'
+
 
 def get_maps_from_config_file(config: Path):
     return json.loads(config.read_text())['maps']
@@ -65,7 +64,7 @@ def _make_server(xprocess):
     server_port = os.environ.get('SERVER_PORT', '8080')
 
     class Starter(ProcessStarter):
-        pattern = '[Ss]erver (has )?started'
+        pattern = START_PATTERN
         args = commands
 
     _, output_path = xprocess.ensure("server", Starter)
@@ -96,6 +95,22 @@ def docker_server():
     server = Server(server_domain, port, image_name, **extra_kwargs)
 
     return server
+
+
+def get_config():
+    try:
+        config_path = os.environ['CONFIG_PATH']
+        return json.loads(pathlib.Path(config_path).read_text())
+    except KeyError:
+        raise ServerException('Config path is not given!', {'given variables': os.environ.keys()})
+    except FileNotFoundError:
+        raise ServerException('Config file not found!', {'config_path': os.environ.get('CONFIG_PATH')})
+    except json.decoder.JSONDecodeError as ex:
+        raise ServerException('Cannot parse config file', ex)
+
+
+def get_start_pattern():
+    return START_PATTERN
 
 
 def get_maps(server):
