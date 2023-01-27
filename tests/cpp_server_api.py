@@ -10,7 +10,6 @@ import requests
 
 from urllib.parse import urljoin
 from typing import Optional, Tuple, List, Union, Type, KeysView, Any
-from conftest import get_start_pattern
 
 
 class ServerException(Exception):
@@ -118,6 +117,7 @@ class CppServer:
                  server_domain: str,
                  port: Union[str, int] = '8080',
                  image: Optional[str] = None,
+                 start_pattern: Optional[str] = '[Ss]erver (has )?started',
                  **extra_kwargs):
         self.url = f'http://{server_domain}:{port}'
         self.port = port
@@ -152,7 +152,7 @@ class CppServer:
                 self.container = client.containers.run(image, **kwargs)
             if self.container is None:
                 raise ServerException('Container does not exist', None)
-            pattern = get_start_pattern()
+            pattern = start_pattern
             logs = self.container.logs().decode()
             start_time = time.time()
             while re.search(pattern, logs) is None:

@@ -92,7 +92,7 @@ def docker_server():
         extra_kwargs['entrypoint'] = os.environ['ENTRYPOINT']
     if 'CONTAINER_ARGS' in os.environ:
         extra_kwargs['container_args'] = os.environ['CONTAINER_ARGS'].split(' ')
-    server = Server(server_domain, port, image_name, **extra_kwargs)
+    server = Server(server_domain, port, image_name, start_pattern=START_PATTERN, **extra_kwargs)
 
     return server
 
