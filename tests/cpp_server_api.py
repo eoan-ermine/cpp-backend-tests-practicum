@@ -1,9 +1,14 @@
 import json
+import os
+import re
+import time
+
+import docker
+import docker.errors
 
 import requests
 
 from urllib.parse import urljoin
-from pathlib import Path
 from typing import Optional, Tuple, List, Union, Type, KeysView, Any
 
 
@@ -14,16 +19,10 @@ class ServerException(Exception):
         self.__data = data
         self.args = message, data
 
-    @property
     def message(self):
-        """
-        """
         return self.__message
 
-    @property
     def data(self):
-        """
-        """
         return self.__data
 
     def __str__(self):
@@ -49,25 +48,13 @@ class UnexpectedData(DataInconsistency):
         self.__given = given
         self.args = parent_object, expected, given
 
-    @property
     def parent_object(self):
-        """
-
-        """
         return self.__parent_object
 
-    @property
     def expected(self):
-        """
-
-        """
         return self.__expected
 
-    @property
     def given(self):
-        """
-
-        """
         return self.__given
 
     def __str__(self):
@@ -86,8 +73,6 @@ class WrongFields(UnexpectedData):
 
 
 class WrongType(DataInconsistency):
-    """
-    """
     def __init__(self, parent_object: str, expected_type: Union[Type, List[Type]], given_type: Type):
 
         expected_type = [t.__name__ for t in list(expected_type)]
@@ -100,23 +85,13 @@ class WrongType(DataInconsistency):
         self.__given_type = given_type
         self.args = parent_object, expected_type, given_type
 
-    @property
     def parent_object(self):
-        """
-        """
         return self.__parent_object
 
-    @property
     def expected_type(self):
-        """
-        """
         return self.__expected_type
 
-    @property
     def given_type(self):
-        """
-
-        """
         return self.__given_type
 
     def __str__(self):
@@ -130,18 +105,116 @@ class BadRequest(ServerException):
     """
 
 
+class PortIsAllocated(ServerException):
+    """
+    Docker container can't use the given port, because it's already allocated
+    """
+
+
 class CppServer:
 
-    def __init__(self, url: str, output: Optional[Path] = None):
-        self.url = url
-        if output:
-            self.file = open(output)
+    def __init__(self,
+                 server_domain: str,
+                 port: Union[str, int] = '8080',
+                 image: Optional[str] = None,
+                 start_pattern: Optional[str] = '[Ss]erver (has )?started',
+                 **extra_kwargs):
+        self.url = f'http://{server_domain}:{port}'
+        self.port = port
+
+        if image is None:
+            self.container = None
+            return
+
+        client = docker.from_env()
+        inspector = docker.APIClient()
+        docker_network = os.environ.get('DOCKER_NETWORK')
+
+        kwargs = {
+            'detach': True,
+            'auto_remove': True,
+        }
+
+        if 'container_args' in extra_kwargs:
+            container_args = extra_kwargs.pop('container_args')
+        else:
+            container_args = None
+
+        if docker_network:
+            kwargs['network'] = docker_network
+
+        kwargs.update(extra_kwargs)
+
+        try:
+            if container_args:
+                self.container = client.containers.run(image, list(container_args), **kwargs)
+            else:
+                self.container = client.containers.run(image, **kwargs)
+            if self.container is None:
+                raise ServerException('Container does not exist', None)
+            pattern = start_pattern
+            logs = self.container.logs().decode()
+            start_time = time.time()
+            while re.search(pattern, logs) is None:
+                time.sleep(1)
+                logs = self.container.logs().decode()
+                current_time = time.time()
+                if current_time - start_time >= 3:
+                    raise ServerException('Cannot get the right start phrase from the container.', {'logs': logs})
+
+            # Для доступа в контейнер по имени нужно переприсвоить ему выданное (100% свободное уникальное) имя
+            name = inspector.inspect_container(self.container.id)['Name'][1:]  # Для этого вытаскиваем текущее имя
+            # Присваиваем имя на символ короче, чтобы не получить ошибку, что текущее имя уже занято
+            self.container.rename(name[:-1])
+            self.container.rename(name)     # Присваиваем изначальное имя, чтобы иметь доступ по нему
+
+            if server_domain != '127.0.0.1':
+                # Если работаем в сети докера - обращаемся по имени
+                server_domain = inspector.inspect_container(self.container.id)['Name'][1:]
+            else:
+                # Иначе - по IP адресу контейнера
+                server_domain = inspector.inspect_container(self.container.id)['NetworkSettings']['IPAddress']
+
+            # Переприсваиваем url для запросов
+            self.url = f'http://{server_domain}:{port}'
+
+        except docker.errors.APIError:
+            self.container = None
+
+        self.cursor = 0
+
+    def __enter__(self, **kwargs):
+        self.__init__(**kwargs)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__del__()
+
+    def __del__(self):
+        if self.container is not None:
+            try:
+                self.container.stop()
+            except docker.errors.NotFound:
+                pass
 
     def get_line(self):
-        return self.file.readline()
+        logs: str = self.container.logs().decode()
+        lines = logs.split('\n')
+        try:
+            line = lines[self.cursor]
+            self.cursor += 1
+            return line
+        except IndexError:
+            return None
 
     def get_log(self):
-        return json.loads(self.get_line())
+        attempt = 1
+        while attempt <= 3:
+            line = self.get_line()
+            if line is not None:
+                return json.loads(line)
+            attempt += 1
+            time.sleep(0.1)   # In case the server haven't posted logs yet, but will do it soon
+        return None
 
     def request(self, method, header, url, **kwargs):
         try:
