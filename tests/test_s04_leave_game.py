@@ -24,7 +24,7 @@ import psycopg2.errors
 from conftest import get_config, get_start_pattern
 
 
-DEFAULT_RETIREMENT_TIME = 60.0  # Значение по умолчанию из задания
+DEFAULT_RETIREMENT_TIME = 60.0  # Из задания
 
 
 def get_connection(db_name):
@@ -179,9 +179,7 @@ def get_retirement_time() -> float:
     try:
         config = get_config()
         return config['dogRetirementTime']
-    except KeyError:
-        return DEFAULT_RETIREMENT_TIME
-    except TypeError:
+    except (KeyError, TypeError):
         return DEFAULT_RETIREMENT_TIME
 
 

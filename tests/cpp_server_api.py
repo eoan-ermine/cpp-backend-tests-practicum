@@ -10,6 +10,8 @@ import requests
 
 from urllib.parse import urljoin
 from typing import Optional, Tuple, List, Union, Type, KeysView, Any
+from conftest import get_start_pattern
+
 
 class ServerException(Exception):
     def __init__(self, message: str, data: Any):
@@ -150,7 +152,7 @@ class CppServer:
                 self.container = client.containers.run(image, **kwargs)
             if self.container is None:
                 raise ServerException('Container does not exist', None)
-            pattern = '[Ss]erver (has )?started'
+            pattern = get_start_pattern()
             logs = self.container.logs().decode()
             start_time = time.time()
             while re.search(pattern, logs) is None:
@@ -338,7 +340,6 @@ class CppServer:
     @staticmethod
     def validate_response(res: requests.Response):
         if res.status_code != 200:
-            print(res.status_code, res.content)
             raise BadRequest('Status code isn\'t OK', {'status code': res.status_code, 'response': res.content})
 
         CppServer.assert_fields('Response headers',
