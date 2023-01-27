@@ -404,7 +404,7 @@ def test_reload_server(postgres_server, map_id):
 
     postgres_server.container.reload()
     reloaded_records = get_records(postgres_server)
-
+    
     compare(records, reloaded_records)
 
 

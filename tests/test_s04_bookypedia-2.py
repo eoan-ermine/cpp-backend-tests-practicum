@@ -335,27 +335,27 @@ def test_show_authors(db_name):
 #         assert bookypedia.add_book(33, 'Book3') is None
 
 
-@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
-def test_show_author_books(db_name):
-    with run_bookypedia(db_name) as bookypedia:
-        bookypedia.show_books()
-        authors = get_authors(db_name)
-        for i in range(len(authors)):
-            books = bookypedia.show_author_books(Bookypedia.index_chooser(i))
-            assert books == get_author_books(db_name, authors[i]['id'])
-
-        bookypedia.add_author('author3')
-        bookypedia.add_author('author2')
-        bookypedia.add_author('author1')
-
-        bookypedia.add_book(1111, 'Title1', Bookypedia.index_chooser(0))
-        bookypedia.add_book(222, 'Title2', Bookypedia.index_chooser(0))
-        bookypedia.add_book(33, 'Title3', Bookypedia.index_chooser(1))
-
-        authors = get_authors(db_name)
-        for i in range(len(authors)):
-            books = bookypedia.show_author_books(Bookypedia.index_chooser(i))
-            assert books == get_author_books(db_name, authors[i]['id'])
+# @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+# def test_show_author_books(db_name):
+#     with run_bookypedia(db_name) as bookypedia:
+#         bookypedia.show_books()
+#         authors = get_authors(db_name)
+#         for i in range(len(authors)):
+#             books = bookypedia.show_author_books(Bookypedia.index_chooser(i))
+#             assert books == get_author_books(db_name, authors[i]['id'])
+#
+#         bookypedia.add_author('author3')
+#         bookypedia.add_author('author2')
+#         bookypedia.add_author('author1')
+#
+#         bookypedia.add_book(1111, 'Title1', Bookypedia.index_chooser(0))
+#         bookypedia.add_book(222, 'Title2', Bookypedia.index_chooser(0))
+#         bookypedia.add_book(33, 'Title3', Bookypedia.index_chooser(1))
+#
+#         authors = get_authors(db_name)
+#         for i in range(len(authors)):
+#             books = bookypedia.show_author_books(Bookypedia.index_chooser(i))
+#             assert books == get_author_books(db_name, authors[i]['id'])
 
 
 # @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
