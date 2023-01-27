@@ -179,7 +179,7 @@ def get_retirement_time() -> float:
     try:
         config = get_config()
         return config['dogRetirementTime']
-    except (KeyError, TypeError):
+    except KeyError:
         return DEFAULT_RETIREMENT_TIME
 
 
