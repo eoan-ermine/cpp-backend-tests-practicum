@@ -7,11 +7,11 @@ defaultBagCapacity = 3
 
 
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
-def test_map_invalid_verb(docker_server, method, map_dict):
+def test_map_invalid_verb(server, method, map_dict):
     map_id = map_dict['id']
     header = {}
     request = f'api/v1/maps/{map_id}'
-    res = docker_server.request(method, header, f'/{request}')
+    res = server.request(method, header, f'/{request}')
 
     assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
@@ -25,10 +25,10 @@ def test_map_invalid_verb(docker_server, method, map_dict):
 
 @pytest.mark.parametrize('method', ['GET', 'HEAD'])
 @pytest.mark.randomize(min_length=1, max_length=15, str_attrs=('digits', 'ascii_letters'), ncalls=3)
-def test_map_not_found(docker_server, method, map_id_bad: str):
+def test_map_not_found(server, method, map_id_bad: str):
     header = {}
     request = f'api/v1/maps/__{map_id_bad}'
-    res = docker_server.request(method, header, f'/{request}')
+    res = server.request(method, header, f'/{request}')
 
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
@@ -45,11 +45,11 @@ def test_map_not_found(docker_server, method, map_id_bad: str):
 
 
 @pytest.mark.parametrize('method', ['GET', 'HEAD'])
-def test_map_success(docker_server, method, map_dict):
+def test_map_success(server, method, map_dict):
     map_dict.pop('dogSpeed', None)
     header = {}
     request = f'api/v1/maps/{map_dict["id"]}'
-    res = docker_server.request(method, header, f'/{request}')
+    res = server.request(method, header, f'/{request}')
 
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
@@ -61,10 +61,10 @@ def test_map_success(docker_server, method, map_dict):
 
 
 @pytest.mark.parametrize('method', ['OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'])
-def test_state_invalid_verb(docker_server, method):
+def test_state_invalid_verb(server, method):
     header = {}
     request = 'api/v1/game/state'
-    res = docker_server.request(method, header, f'/{request}')
+    res = server.request(method, header, f'/{request}')
 
     assert res.status_code == 405
     assert res.headers['content-type'] == 'application/json'
@@ -80,26 +80,26 @@ def is_point_on_roads(roads: dict, point: list):
     return any((Road(road).is_on_the_road(Point(*point)) for road in roads))
 
 
-def add_user_and_wait_loot(docker_server, name, map_id):
-    res = utils.join_to_map(docker_server, name, map_id)
+def add_user_and_wait_loot(server, name, map_id):
+    res = utils.join_to_map(server, name, map_id)
     token = res.json()['authToken']
-    utils.tick(docker_server, 5000*1000)
-    utils.tick(docker_server, 5000*1000)
-    utils.tick(docker_server, 5000*1000)
-    utils.tick(docker_server, 5000*1000)
+    utils.tick(server, 5000*1000)
+    utils.tick(server, 5000*1000)
+    utils.tick(server, 5000*1000)
+    utils.tick(server, 5000*1000)
     return token
 
 
 @pytest.mark.parametrize('method', ['HEAD', 'GET'])
-def test_state_success(docker_server, method, map_dict):
+def test_state_success(server_one_test, method, map_dict):
     map_id = map_dict['id']
 
     for i, name in enumerate(['user1', 'user2']):
-        token = add_user_and_wait_loot(docker_server, name, map_id)
+        token = add_user_and_wait_loot(server_one_test, name, map_id)
 
         request = 'api/v1/game/state'
         header = {'content-type': 'application/json', 'authorization': f'Bearer {token}'}
-        res = docker_server.request(method, header, request)
+        res = server_one_test.request(method, header, request)
 
         assert res.status_code == 200
         assert res.headers['content-type'] == 'application/json'
