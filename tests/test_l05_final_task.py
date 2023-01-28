@@ -60,33 +60,33 @@ bad_request = {
 }
 
 
-def test_list(docker_server):
+def test_list(server):
     request = 'api/v1/maps'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == ans_list
 
 
-def test_info(docker_server):
+def test_info(server):
     request = 'api/v1/maps/map1'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == ans_info
 
 
-def test_map_not_found(docker_server):
+def test_map_not_found(server):
     request = 'api/v1/maps/map33'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
     assert res.json()["code"] == map_not_found["code"]
 
 
-def test_bad_request(docker_server):
+def test_bad_request(server):
     request = 'api/v333/maps/map1'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
     assert res.json()["code"] == bad_request["code"]

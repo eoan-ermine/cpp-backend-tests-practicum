@@ -66,9 +66,7 @@ def run_server(state, remove_state=False):
             break
         time.sleep(0.001)
 
-    # server = utils.Server(f'http://{server_domain}:{server_port}/')
-    server = utils.Server(server_domain, server_port)
-
+    server = utils.Server(f'http://{server_domain}:{server_port}/')
     try:
         yield server, container
     finally:

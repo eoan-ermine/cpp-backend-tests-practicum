@@ -1,6 +1,3 @@
-import re
-
-
 ans_list = [
     {
         "id": "map1",
@@ -63,78 +60,76 @@ bad_request = {
 }
 
 
-def test_logs(docker_server):
-    log_json = docker_server.get_log()
-    pattern = '[Ss]erver (has )?started'
-    search = re.search(pattern, log_json['message'])
-    assert len(search.groups()) == 1
+def test_logs(server):
+    log_json = server.get_log()
+    assert log_json['message'] == 'Server has started...'
     assert log_json['data']['port'] == 8080
     assert log_json['data']['address'] == '0.0.0.0'
     request = 'images/cube.svg'
-    res = docker_server.get(f'/{request}')
-    log_json = docker_server.get_log()
+    res = server.get(f'/{request}')
+    log_json = server.get_log()
     assert log_json['message'] == 'request received'
     assert log_json['data']['method'] == 'GET'
     assert log_json['data']['URI'] == '/images/cube.svg'
-    log_json = docker_server.get_log()
+    log_json = server.get_log()
     assert log_json['message'] == 'response sent'
     assert log_json['data']['code'] == 200
     assert log_json['data']['content_type'] == 'image/svg+xml'
 
 
-def test_list(docker_server):
+def test_list(server):
     request = 'api/v1/maps'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == ans_list
 
 
-def test_info(docker_server):
+def test_info(server):
     request = 'api/v1/maps/map1'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
     assert res.json() == ans_info
 
 
-def test_map_not_found(docker_server):
+def test_map_not_found(server):
     request = 'api/v1/maps/map33'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'application/json'
     assert res.json()["code"] == map_not_found["code"]
 
 
-def test_bad_request(docker_server):
+def test_bad_request(server):
     request = 'api/v333/maps/map1'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 400
     assert res.headers['content-type'] == 'application/json'
     assert res.json()["code"] == bad_request["code"]
 
 
-def test_image(docker_server):
+def test_image(server):
     request = 'images/cube.svg'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'image/svg+xml'
 
 
-def test_file_not_found(docker_server):
+def test_file_not_found(server):
     request = 'images/ccccube.svg'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 404
     assert res.headers['content-type'] == 'text/plain'
 
 
-def test_index_html(docker_server):
+def test_index_html(server):
     request = 'index.html'
-    res = docker_server.get(f'/{request}')
+    res = server.get(f'/{request}')
     assert res.status_code == 200
     assert res.headers['content-type'] == 'text/html'
     request2 = ''
-    res2 = docker_server.get(f'/{request2}')
+    res2 = server.get(f'/{request2}')
     assert res2.status_code == 200
     assert res2.headers['content-type'] == 'text/html'
     assert res2.text == res.text
