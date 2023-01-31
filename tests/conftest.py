@@ -1,5 +1,6 @@
 import os
 import json
+import pathlib
 
 import pytest
 
@@ -8,7 +9,11 @@ from pathlib import Path
 from contextlib import contextmanager
 from typing import Set
 
+
 from cpp_server_api import CppServer as Server
+from cpp_server_api import ServerException
+
+START_PATTERN = '[Ss]erver (has )?started'
 
 
 def get_maps_from_config_file(config: Path):
@@ -59,12 +64,12 @@ def _make_server(xprocess):
     server_port = os.environ.get('SERVER_PORT', '8080')
 
     class Starter(ProcessStarter):
-        pattern = '[Ss]erver (has )?started'
+        pattern = START_PATTERN
         args = commands
 
     _, output_path = xprocess.ensure("server", Starter)
 
-    yield Server(f'http://{server_domain}:{server_port}/', output_path)
+    yield Server(server_domain, server_port)
 
     xprocess.getinfo("server").terminate()
 
@@ -73,6 +78,39 @@ def _make_server(xprocess):
 def server_one_test(xprocess):
     with _make_server(xprocess) as result:
         yield result
+
+
+@pytest.fixture(scope='function')
+def docker_server():
+    server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
+    image_name = os.environ['IMAGE_NAME']
+    port = os.environ.get('SERVER_PORT', '8080')
+
+    extra_kwargs = {}
+
+    if 'ENTRYPOINT' in os.environ:
+        extra_kwargs['entrypoint'] = os.environ['ENTRYPOINT']
+    if 'CONTAINER_ARGS' in os.environ:
+        extra_kwargs['container_args'] = os.environ['CONTAINER_ARGS'].split(' ')
+    server = Server(server_domain, port, image_name, start_pattern=START_PATTERN, **extra_kwargs)
+
+    return server
+
+
+def get_config():
+    try:
+        config_path = os.environ['CONFIG_PATH']
+        return json.loads(pathlib.Path(config_path).read_text())
+    except KeyError:
+        raise ServerException('Config path is not given!', {'given variables': os.environ.keys()})
+    except FileNotFoundError:
+        raise ServerException('Config file not found!', {'config_path': os.environ.get('CONFIG_PATH')})
+    except json.decoder.JSONDecodeError as ex:
+        raise ServerException('Cannot parse config file', ex)
+
+
+def get_start_pattern():
+    return START_PATTERN
 
 
 def get_maps(server):
