@@ -22,6 +22,46 @@ random.seed(42)
 # TODO: Replace all time.sleep
 
 
+# TODO:
+#   DeleteAuthor
+#       For authors withoud books           - Ok
+#       For authors with books              - requires fixes in current solution
+#       Canceling                           - requires fixes
+#       Failed deletion non-existent author - Ok
+#   EditAuthor
+#       By Name   - Ok
+#       By Index  -
+#       Canceling -
+#   ShowBooks
+#   ShowBook
+#   DeleteBook
+#   EditBook
+
+
+def create_random_name():
+    names = [
+        'Bob', 'Kevin', 'Roberto', 'Quill', 'Patrick', 'Luciano', 'Zelda', 'Patricia', 'Sara'
+    ]
+    surnames = [
+        'Fox', 'Gallagher', 'The Bull', 'The third', 'Spalletti', 'Brown', 'The greatest', ''
+    ]
+    additions = [
+        '',  'Great', 'Superpowered', 'Fictional', 'Egocentric'
+    ]
+    author: str = random.choice(additions) + ' ' + random.choice(names) + ' ' + random.choice(surnames)
+    author = author.strip()
+    return author
+
+
+def create_new_name(db_name):
+    attempt = create_random_name()
+    authors = [pair[1] for pair in get_authors(db_name)]
+    while attempt in authors:
+        attempt = create_random_name()
+
+    return attempt
+
+
 def get_connection(db_name):
     return psycopg2.connect(user=os.environ['POSTGRES_USER'],
                             password=os.environ['POSTGRES_PASSWORD'],
@@ -122,6 +162,17 @@ class Bookypedia:
         def chooser(authors):
             return index+1, authors[index]
         return chooser
+
+    @staticmethod
+    def empty_chooser(authors):  # To test canceling
+        return '', ''
+
+    @staticmethod
+    def get_index_by_author(db_name, author):
+        authors = get_authors(db_name)
+        for i, pair in enumerate(authors):
+            if pair[1].find(author):
+                return i + 1
 
     def _wait_select(self, timeout=0.2):
         delta = timeout/100
@@ -323,6 +374,111 @@ def test_show_authors(db_name):
         assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
 
 
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_existing_author_by_name(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        # without books
+        extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+        for author in extra_authors:
+            assert bookypedia.add_author(author) is None
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+        for author in extra_authors:
+            assert bookypedia.delete_author(author) is None
+
+        for author in get_authors(db_name):
+            assert bookypedia.delete_author(author[1]) is None  # Fails fot authors with books
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
+@pytest.mark.skip
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_existing_author_by_index(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        # without books
+        if db_name != 'empty_db':
+            extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+        else:
+            extra_authors = [create_random_name() for _ in range(0, 3)]
+        for author in extra_authors:
+            assert bookypedia.add_author(author) is None
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+        for _ in get_authors(db_name):
+            assert bookypedia.delete_author(bookypedia.random_chooser) is None  # Fails fot authors with books
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_author_canceling(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        # without books
+        if db_name != 'empty_db':
+            extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+        else:
+            extra_authors = [create_random_name() for _ in range(0, 3)]
+        for author in extra_authors:
+            assert bookypedia.add_author(author) is None
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+        for _ in extra_authors:
+            assert bookypedia.delete_author(bookypedia.empty_chooser) is None    # Returns Failed to delete author
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_non_existing_author(db_name):
+    with run_bookypedia(db_name, reset_db=True) as bookypedia:
+        bookypedia: Bookypedia
+        if db_name != 'empty_db':
+            non_existing_authors = [create_new_name(db_name) for _ in range(0, 3)]
+        else:
+            non_existing_authors = [create_random_name() for _ in range(0, 3)]
+
+        for pseudo_author in non_existing_authors:
+            assert bookypedia.delete_author(pseudo_author).startswith('Failed to delete author')
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_edit_author_by_name(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        # without books
+        if db_name != 'empty_db':
+            extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+        else:
+            extra_authors = [create_random_name() for _ in range(0, 3)]
+
+        for author in extra_authors:
+            assert bookypedia.add_author(author) is None
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+        for author in [pair[1] for pair in get_authors(db_name)]:
+            if db_name != 'empty_db':
+                index = bookypedia.get_index_by_author(db_name, author)
+                books = bookypedia.show_author_books(bookypedia.index_chooser(index))
+
+            new_name: str = create_new_name(db_name)
+            assert bookypedia.edit_author(author, new_name) is None
+            if db_name != 'empty_db':
+                index = bookypedia.get_index_by_author(db_name, new_name)
+                assert books == bookypedia.show_author_books(bookypedia.index_chooser(index))
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
 # @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 # def test_add_book(db_name):
 #     with run_bookypedia(db_name) as bookypedia:
@@ -409,7 +565,7 @@ def drop_db(db_name):
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     with conn.cursor() as cur:
         try:
-            cur.execute(f'drop database {db_name};')
+            cur.execute(f'drop database if exists {db_name};')
         except Exception as e:
             print(e)
     conn.close()
@@ -426,27 +582,27 @@ def create_db(db_name):
         with get_connection(db_name) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-"""CREATE TABLE IF NOT EXISTS authors (
-    id UUID CONSTRAINT firstindex PRIMARY KEY,
-    name varchar(100) NOT NULL UNIQUE
-);
-CREATE TABLE IF NOT EXISTS books (
-    id UUID PRIMARY KEY,
-    title VARCHAR(100) NOT NULL,
-    publication_year INT,
-    author_id UUID,
-    CONSTRAINT fk_authors
-        FOREIGN KEY(author_id)
-        REFERENCES authors(id)
-);
-CREATE TABLE IF NOT EXISTS tags (
-    book_id UUID,
-    tag varchar(30) NOT NULL,
-    CONSTRAINT fk_books
-        FOREIGN KEY(book_id)
-        REFERENCES books(id)
-);
-""")
+                    """CREATE TABLE IF NOT EXISTS authors (
+                        id UUID CONSTRAINT firstindex PRIMARY KEY,
+                        name varchar(100) NOT NULL UNIQUE
+                    );
+                    CREATE TABLE IF NOT EXISTS books (
+                        id UUID PRIMARY KEY,
+                        title VARCHAR(100) NOT NULL,
+                        publication_year INT,
+                        author_id UUID,
+                        CONSTRAINT fk_authors
+                            FOREIGN KEY(author_id)
+                            REFERENCES authors(id)
+                    );
+                    CREATE TABLE IF NOT EXISTS tags (
+                        book_id UUID,
+                        tag varchar(30) NOT NULL,
+                        CONSTRAINT fk_books
+                            FOREIGN KEY(book_id)
+                            REFERENCES books(id)
+                    );
+                    """)
 
     insert_author = f'INSERT INTO authors (id, name) VALUES (%s, %s);'
     insert_book = f'INSERT INTO books (id, title, author_id, publication_year) VALUES (%s, %s, %s, %s);'
@@ -472,3 +628,8 @@ if __name__ == '__main__':
     for name in ['empty_db', 'table_db', 'full_db']:
         drop_db(name)
         create_db(name)
+
+    os.environ['POSTGRES_USER'] = 'postgres'
+    os.environ['POSTGRES_PASSWORD'] = 'sdasd'
+    os.environ['POSTGRES_HOST'] = '172.17.0.2'
+    os.environ['POSTGRES_PORT'] = '5432'
