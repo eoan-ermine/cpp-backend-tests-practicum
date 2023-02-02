@@ -15,11 +15,15 @@ from contextlib import contextmanager
 import psycopg2
 from psycopg2.extras import DictCursor
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from psycopg2 import errors
 
 
 random.seed(42)
 
-# TODO: Replace all time.sleep
+# TODO:
+#  Replace all time.sleep
+#  Replace book_tags with tags after fixing in current solution
+
 
 
 # TODO:
@@ -30,12 +34,17 @@ random.seed(42)
 #       Failed deletion non-existent author - Ok
 #   EditAuthor
 #       By Name   - Ok
-#       By Index  -
-#       Canceling -
+#       By Index  - Ok
+#       Canceling - Failed to edit
 #   ShowBooks
+#       Ok
 #   ShowBook
+#       By name   - Ok
+#       By index  - Ok
+#       Canceling - Ok
 #   DeleteBook
 #   EditBook
+#   Concurrency
 
 
 def create_random_name():
@@ -55,11 +64,28 @@ def create_random_name():
 
 def create_new_name(db_name):
     attempt = create_random_name()
-    authors = [pair[1] for pair in get_authors(db_name)]
+    try:
+        authors = [pair[1] for pair in get_authors(db_name)]
+    except psycopg2.errors.UndefinedTable:
+        authors = []
+
     while attempt in authors:
         attempt = create_random_name()
 
     return attempt
+
+
+def create_messy_tags(count: Optional[int] = 20):
+    tags = ['tag 1', 'romantic', 'pedantic', 'horror', 'for adults', 'for children']
+    bad_tags = ['', '      ', '    spaaaaces   ', ', , , , ', ' #']
+    bad_count = random.randint(0, count - 1)
+    chosen = [random.choice(tags) for _ in range(count - bad_count)]
+    chosen.extend([random.choice(bad_tags) for _ in range(bad_count)])
+    chosen.append(random.choice(chosen))  # To ensure there is at least one duplicate
+    result = ''
+    for tag in chosen:
+        result += tag + ', '
+    return result
 
 
 def get_connection(db_name):
@@ -78,6 +104,24 @@ def authors_to_str(authors):
 
 def books_to_str(books):
     return [f'{i+1} {book["title"]} by {book["name"]}, {book["publication_year"]}'.strip() for i, book in enumerate(books)]
+
+
+def book_to_str(book: List[str]) -> List[str]:
+    result = list()
+    result.append('Title: ' + book[1])
+    result.append('Author: ' + book[2])
+    result.append('Publication year: ' + str(book[3]))
+    if len(book) == 5:
+        tags = book[4].split(',')
+        tags = [tag.strip() for tag in tags]
+        tags.sort()
+        sorted_tags = ''
+        for tag in tags:
+            sorted_tags += tag + ', '
+        sorted_tags = sorted_tags[:-2]  # Dumb way to get rid of ", " on the end
+        result.append('Tags: ' + sorted_tags)
+
+    return result
 
 
 def get_authors(db_name):
@@ -122,6 +166,11 @@ ORDER BY publication_year, title
 
 
 def get_book(db_name, title):
+
+    # FIXME:
+    #  В текущем решении указана таблица book_tags вместо tags,
+    #  что не соответствует заданию!!!
+
     query = """SELECT
     books.id AS book_id,
     title,
@@ -134,12 +183,32 @@ INNER JOIN (
     SELECT
         book_id,
         STRING_AGG(tag, ', ') AS tags
-    FROM tags
-    GROUP BY tags.book_id
+    FROM book_tags
+    GROUP BY book_tags.book_id
 ) AS grouped_tags
 ON grouped_tags.book_id = books.id
 WHERE title=%s
 ;"""
+#     query = """SELECT
+#     books.id AS book_id,
+#     title,
+#     name,
+#     publication_year,
+#     grouped_tags.tags
+# FROM books
+# INNER JOIN authors ON authors.id = author_id
+# INNER JOIN (
+#     SELECT
+#         book_id,
+#         STRING_AGG(tag, ', ') AS tags
+#     FROM book_tags
+#     GROUP BY book_tags.book_id
+# ) AS grouped_tags
+# ON grouped_tags.book_id = books.id
+# WHERE title=%s
+# ;"""
+
+
     with get_connection(db_name) as conn:
         with conn.cursor() as cur:
             cur.execute(query, (title,))
@@ -169,10 +238,19 @@ class Bookypedia:
 
     @staticmethod
     def get_index_by_author(db_name, author):
-        authors = get_authors(db_name)
-        for i, pair in enumerate(authors):
-            if pair[1].find(author):
+        authors = authors_to_str(get_authors(db_name))
+        for i, string in enumerate(authors):
+            if string.find(author) != -1:
                 return i + 1
+
+    @staticmethod
+    def book_chooser(author):
+        def chooser(books: List[str]):
+            for i, book in enumerate(books):
+                if book.find(author) != -1:
+                    return i + 1, book
+
+        return chooser
 
     def _wait_select(self, timeout=0.2):
         delta = timeout/100
@@ -224,7 +302,10 @@ class Bookypedia:
         return self._author('DeleteAuthor', author_or_callback)
 
     def edit_author(self, author_or_callback: Union[str, Callable], new_author: str) -> Optional[str]:
-        _ = self._author('EditAuthor', author_or_callback)  # Enter new name:
+        request = self._author('EditAuthor', author_or_callback)  # Enter new name:
+        if author_or_callback == self.empty_chooser:
+            return request
+
         self.process.write(new_author)
         if self._wait_select():
             return self.process.read()
@@ -241,7 +322,7 @@ class Bookypedia:
                     return books
         else:
             self.process.write(command)
-            books = self._wait_strings()[1:-1]
+            books = self._wait_strings()[:-1]
             if books:
                 number, self.chose = book_or_callback(books)
                 self.process.write(f'{number}')
@@ -267,15 +348,16 @@ class Bookypedia:
         if self._wait_select():
             return self.process.read()
 
-    def add_book(self, year: int, title: str, author_or_callback: Union[str, Callable], add_author_answer: str = 'y') -> Optional[str]:
+    def add_book(self, year: int, title: str, author_or_callback: Union[str, Callable], tags: str, add_author_answer: str = 'y') -> Optional[str]:
         self.process.write(f'AddBook {year} {title}')
+        if self._wait_select():
+            _ = self.process.read()  # Enter author
 
         if isinstance(author_or_callback, str):
             self.process.write(author_or_callback)
             if self._wait_select():
                 _ = self.process.read()  # y/n?
                 self.process.write(add_author_answer)
-
         else:
             self.process.write('')
             authors = self._wait_strings()[1:-1]
@@ -284,9 +366,14 @@ class Bookypedia:
                 self.process.write(f'{number}')
             else:
                 self.process.write('')
-                return None
-            if self._wait_select():
-                return self.process.read()
+
+        if self._wait_select():
+            _ = self.process.read()   # Add tags
+            self.process.write(tags)
+
+        if self._wait_select():
+            return self.process.read()
+
 
     def show_author_books(self, author_chooser: Optional[Callable] = None) -> List[str]:
         if author_chooser is None:
@@ -381,6 +468,7 @@ def test_delete_existing_author_by_name(db_name):
 
         # without books
         extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+
         for author in extra_authors:
             assert bookypedia.add_author(author) is None
         assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
@@ -401,10 +489,8 @@ def test_delete_existing_author_by_index(db_name):
         bookypedia: Bookypedia
 
         # without books
-        if db_name != 'empty_db':
-            extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
-        else:
-            extra_authors = [create_random_name() for _ in range(0, 3)]
+        extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+
         for author in extra_authors:
             assert bookypedia.add_author(author) is None
         assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
@@ -421,10 +507,8 @@ def test_delete_author_canceling(db_name):
         bookypedia: Bookypedia
 
         # without books
-        if db_name != 'empty_db':
-            extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
-        else:
-            extra_authors = [create_random_name() for _ in range(0, 3)]
+        extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+
         for author in extra_authors:
             assert bookypedia.add_author(author) is None
         assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
@@ -439,10 +523,8 @@ def test_delete_author_canceling(db_name):
 def test_delete_non_existing_author(db_name):
     with run_bookypedia(db_name, reset_db=True) as bookypedia:
         bookypedia: Bookypedia
-        if db_name != 'empty_db':
-            non_existing_authors = [create_new_name(db_name) for _ in range(0, 3)]
-        else:
-            non_existing_authors = [create_random_name() for _ in range(0, 3)]
+
+        non_existing_authors = [create_new_name(db_name) for _ in range(0, 3)]
 
         for pseudo_author in non_existing_authors:
             assert bookypedia.delete_author(pseudo_author).startswith('Failed to delete author')
@@ -456,10 +538,7 @@ def test_edit_author_by_name(db_name):
         bookypedia: Bookypedia
 
         # without books
-        if db_name != 'empty_db':
-            extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
-        else:
-            extra_authors = [create_random_name() for _ in range(0, 3)]
+        extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
 
         for author in extra_authors:
             assert bookypedia.add_author(author) is None
@@ -474,10 +553,141 @@ def test_edit_author_by_name(db_name):
             assert bookypedia.edit_author(author, new_name) is None
             if db_name != 'empty_db':
                 index = bookypedia.get_index_by_author(db_name, new_name)
+                print(index)
                 assert books == bookypedia.show_author_books(bookypedia.index_chooser(index))
 
         assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
 
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_edit_author_by_index(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        # without books
+        extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+
+        for author in extra_authors:
+            assert bookypedia.add_author(author) is None
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+        authors = [pair[1] for pair in get_authors(db_name)]
+        for author in authors:
+            index = bookypedia.get_index_by_author(db_name, author)
+
+            if db_name != 'empty_db':
+                books = bookypedia.show_author_books(bookypedia.index_chooser(index - 1))
+
+            new_name: str = create_new_name(db_name)
+            assert bookypedia.edit_author(bookypedia.index_chooser(index - 1), new_name) is None
+            if db_name != 'empty_db':
+                index = bookypedia.get_index_by_author(db_name, new_name)
+                assert books == bookypedia.show_author_books(bookypedia.index_chooser(index - 1))
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_edit_author_canceling(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        # without books
+        extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+
+        for author in extra_authors:
+            assert bookypedia.add_author(author) is None
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+        authors = [pair[1] for pair in get_authors(db_name)]
+        for author in authors:
+            index = bookypedia.get_index_by_author(db_name, author)
+
+            if db_name != 'empty_db':
+                books = bookypedia.show_author_books(bookypedia.index_chooser(index - 1))
+
+            new_name: str = author
+            assert bookypedia.edit_author(bookypedia.empty_chooser, None) is None
+            if db_name != 'empty_db':
+                index = bookypedia.get_index_by_author(db_name, new_name)
+                assert books == bookypedia.show_author_books(bookypedia.index_chooser(index - 1))
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_show_books(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        bookypedia.add_book(1563, 'How to cook an egg', bookypedia.random_chooser, 'tag23, tag14, tag 55')
+        bookypedia.add_book(8763, 'Great man cannot do great things!', create_new_name(db_name), 'y')
+
+        bookypedia.add_book(74, 'Strange ancient book!', create_new_name(db_name), 'tag1, tag2, tag3', 'y')
+
+        books = bookypedia.show_books()
+        db_books = books_to_str(get_books(db_name))
+
+        assert books == db_books
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_show_book(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        books = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+        for book in books:
+            bookypedia.add_book(random.randint(1, 2054), book, create_new_name(db_name), create_messy_tags(15))
+
+        for title in books:
+            db_book = book_to_str(get_book(db_name, title)[0])
+
+            bookypedia_book = bookypedia.show_book(title)
+            assert db_book == bookypedia_book
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_show_book_choose_book(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        book_title = 'A new way to cook eggs!'
+        authors = [create_new_name(db_name) for _ in range(3)]
+
+        for author in authors:
+            bookypedia.add_book(random.randint(1, 2054), book_title, author, create_messy_tags(15))
+        authors.sort()
+
+        for author in authors:
+
+            db_books = get_book(db_name, book_title)
+            for book in db_books:
+                if book[2] == author:
+                    break
+            else:
+                book = None
+            book = book_to_str(book)
+            bookypedia_book = bookypedia.show_book(bookypedia.book_chooser(author))
+            assert bookypedia_book == book
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_show_book_canceling(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        book_title = 'A new way to cook eggs!'
+        authors = [create_new_name(db_name) for _ in range(3)]
+
+        for author in authors:
+            bookypedia.add_book(random.randint(1, 2054), book_title, author, create_messy_tags(15))
+        authors.sort()
+
+        for _ in authors:
+            assert bookypedia.show_book(bookypedia.empty_chooser) == []
 
 # @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 # def test_add_book(db_name):
@@ -581,6 +791,8 @@ def create_db(db_name):
     if db_name in {'table_db', 'full_db'}:
         with get_connection(db_name) as conn:
             with conn.cursor() as cur:
+                # FIXME: Аналогично, заменить book tags на tags в решении
+
                 cur.execute(
                     """CREATE TABLE IF NOT EXISTS authors (
                         id UUID CONSTRAINT firstindex PRIMARY KEY,
@@ -595,7 +807,7 @@ def create_db(db_name):
                             FOREIGN KEY(author_id)
                             REFERENCES authors(id)
                     );
-                    CREATE TABLE IF NOT EXISTS tags (
+                    CREATE TABLE IF NOT EXISTS book_tags (
                         book_id UUID,
                         tag varchar(30) NOT NULL,
                         CONSTRAINT fk_books
@@ -606,7 +818,8 @@ def create_db(db_name):
 
     insert_author = f'INSERT INTO authors (id, name) VALUES (%s, %s);'
     insert_book = f'INSERT INTO books (id, title, author_id, publication_year) VALUES (%s, %s, %s, %s);'
-    insert_tag = f'INSERT INTO tags (book_id, tag) VALUES (%s, %s);'
+    # FIXME: Аналогично, заменить book tags на tags в решении
+    insert_tag = f'INSERT INTO book_tags (book_id, tag) VALUES (%s, %s);'
     if db_name == 'full_db':
         with get_connection(db_name) as conn:
             with conn.cursor() as cur:
