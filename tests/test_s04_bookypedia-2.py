@@ -41,8 +41,13 @@ random.seed(42)
 #   ShowBook
 #       By name   - Ok
 #       By index  - Ok
+#       Gl index  - Ok
 #       Canceling - Ok
 #   DeleteBook
+#       By name   - Ok
+#       By index  - Ok
+#       Gl index  - Ok
+#       Canceling - Ok
 #   EditBook
 #   Concurrency
 
@@ -310,7 +315,34 @@ class Bookypedia:
         if self._wait_select():
             return self.process.read()
 
-    def _book(self, command: str, book_or_callback: Union[str, Callable]) -> List[str]:
+    def _book(self, command: str, book: Optional[str], callback: Optional[Callable]) -> List[str]:
+
+        # Using title
+        if isinstance(book, str):
+            self.process.write(f'{command} {book}')
+            books = self._wait_strings()
+            if books:
+                # More than one book with this title
+                if books[0].startswith('1'):
+                    if callback:
+                        number, self.chose = callback(books)
+                    else:
+                        self.chose = books[0]
+                        number = 1
+                    self.process.write(f'{number}')
+                else:
+                    return books
+        # Using callback only
+        else:
+            self.process.write(command)
+            books = self._wait_strings()[:-1]
+            if books:
+                number, self.chose = callback(books)
+                self.process.write(f'{number}')
+
+        return self._wait_strings()
+
+    def __book(self, command: str, book_or_callback: Union[str, Callable]) -> List[str]:
         if isinstance(book_or_callback, str):
             self.process.write(f'{command} {book_or_callback}')
             books = self._wait_strings()
@@ -328,14 +360,14 @@ class Bookypedia:
                 self.process.write(f'{number}')
         return self._wait_strings()
 
-    def show_book(self, book_or_callback: Union[str, Callable]) -> List[str]:
-        return self._book('ShowBook', book_or_callback)
+    def show_book(self, book: Optional[str] = None, callback: Optional[Callable] = None) -> List[str]:
+        return self._book('ShowBook', book, callback)
 
-    def delete_book(self, book_or_callback: Union[str, Callable]) -> List[str]:
-        return self._book('DeleteBook', book_or_callback)
+    def delete_book(self, book: Optional[str] = None, callback: Optional[Callable] = None) -> List[str]:
+        return self._book('DeleteBook', book, callback)
 
-    def edit_book(self, book_or_callback: Union[str, Callable], new_info: Dict[str, str]) -> List[str]:
-        mb_title = self._book('EditBook', book_or_callback)  # Enter new title
+    def edit_book(self, book: Optional[str] = None, callback: Optional[Callable] = None, new_info: Dict[str, str] = None) -> List[str]:
+        mb_title = self._book('EditBook', book, callback)  # Enter new title
         if mb_title:
             if not mb_title[0].startswitn('Enter new title'):
                 return mb_title[0]
@@ -373,7 +405,6 @@ class Bookypedia:
 
         if self._wait_select():
             return self.process.read()
-
 
     def show_author_books(self, author_chooser: Optional[Callable] = None) -> List[str]:
         if author_chooser is None:
@@ -559,7 +590,6 @@ def test_edit_author_by_name(db_name):
         assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
 
 
-
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_edit_author_by_index(db_name):
     with run_bookypedia(db_name) as bookypedia:
@@ -649,6 +679,7 @@ def test_show_book(db_name):
             bookypedia_book = bookypedia.show_book(title)
             assert db_book == bookypedia_book
 
+
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_show_book_choose_book(db_name):
     with run_bookypedia(db_name) as bookypedia:
@@ -659,7 +690,6 @@ def test_show_book_choose_book(db_name):
 
         for author in authors:
             bookypedia.add_book(random.randint(1, 2054), book_title, author, create_messy_tags(15))
-        authors.sort()
 
         for author in authors:
 
@@ -670,8 +700,38 @@ def test_show_book_choose_book(db_name):
             else:
                 book = None
             book = book_to_str(book)
-            bookypedia_book = bookypedia.show_book(bookypedia.book_chooser(author))
+            bookypedia_book = bookypedia.show_book(book_title, bookypedia.book_chooser(author))
             assert bookypedia_book == book
+
+
+@pytest.mark.skip
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_show_book_by_global_index(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        books = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+        for book in books:
+            bookypedia.add_book(random.randint(1, 2054), book, create_new_name(db_name), create_messy_tags(15))
+        db_books = get_books(db_name)
+        string_books = bookypedia.show_books()
+        print(string_books)
+        for i, book in enumerate(string_books):
+            for b in db_books:
+                if book.find(b[1] + ' by') != -1:
+                    title = b[1]
+                    break
+            print(title, book)
+            db_dict_book = get_book(db_name, title)[0]
+            print(db_dict_book)
+            db_book = book_to_str(db_dict_book)
+            print(db_book)
+            bookypedia_book = bookypedia.show_book(callback=bookypedia.index_chooser(i))
+            print(bookypedia_book)
+            print(bookypedia_book)
+            assert bookypedia_book == db_book
 
 
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
@@ -687,7 +747,84 @@ def test_show_book_canceling(db_name):
         authors.sort()
 
         for _ in authors:
-            assert bookypedia.show_book(bookypedia.empty_chooser) == []
+            assert bookypedia.show_book(book_title, bookypedia.empty_chooser) == []
+        for _ in authors:
+            assert bookypedia.show_book(callback=bookypedia.empty_chooser) == []
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_book(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        book_titles = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+        for book in book_titles:
+            bookypedia.add_book(random.randint(1, 2054), book, create_new_name(db_name), create_messy_tags(15))
+
+        books = get_books(db_name)
+
+        for book in books:
+            title = book[1]
+            author = book[3]
+            assert bookypedia.delete_book(title) == []
+            assert books_to_str(get_books(db_name)) == bookypedia.show_books()
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_book_choose_book(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        book_title = 'A new way to cook eggs!'
+        authors = [create_new_name(db_name) for _ in range(3)]
+
+        for author in authors:
+            bookypedia.add_book(random.randint(1, 2054), book_title, author, create_messy_tags(15))
+
+        books = get_books(db_name)
+        for book in books:
+            title = book[1]
+            author = book[3]
+            assert bookypedia.delete_book(title, bookypedia.book_chooser(author)) == []
+            assert books_to_str(get_books(db_name)) == bookypedia.show_books()
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_book_by_global_index(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        books = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+        for book in books:
+            bookypedia.add_book(random.randint(1, 2054), book, create_new_name(db_name), create_messy_tags(15))
+        for i, book in enumerate(get_books(db_name)):
+            print(i, books_to_str(get_books(db_name)))
+            bookypedia.delete_book(callback=bookypedia.index_chooser(0))
+
+            assert bookypedia.show_books() == books_to_str(get_books(db_name))
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_book_canceling(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        book_title = 'A new way to cook eggs!'
+        authors = [create_new_name(db_name) for _ in range(3)]
+
+        for author in authors:
+            bookypedia.add_book(random.randint(1, 2054), book_title, author, create_messy_tags(15))
+        authors.sort()
+
+        for _ in authors:
+            assert bookypedia.delete_book(book_title, bookypedia.empty_chooser) == []
+        for _ in authors:
+            assert bookypedia.delete_book(callback=bookypedia.empty_chooser) == []
+
+
 
 # @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 # def test_add_book(db_name):
