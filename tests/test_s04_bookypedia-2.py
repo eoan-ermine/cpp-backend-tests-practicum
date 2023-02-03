@@ -25,13 +25,12 @@ random.seed(42)
 #  Replace book_tags with tags after fixing in current solution
 
 
-
 # TODO:
 #   DeleteAuthor
-#       For authors withoud books           - Ok
-#       For authors with books              - requires fixes in current solution
-#       Canceling                           - requires fixes
-#       Failed deletion non-existent author - Ok
+#       By name      - Ok
+#       By index     - Ok
+#       Canceling    - Failed to delete
+#       Non-existent - Ok
 #   EditAuthor
 #       By Name      - Ok
 #       By Index     - Ok
@@ -59,6 +58,8 @@ random.seed(42)
 #       Canceling    - Book not found
 #       Non-existing - Ok
 #   Concurrency
+#       AddBook      - 2nd instance failed to create tables with empty_db
+#       EditBook     - Ok
 
 
 def create_random_name():
@@ -185,24 +186,6 @@ def get_book(db_name, title):
     #  В текущем решении указана таблица book_tags вместо tags,
     #  что не соответствует заданию!!!
 
-    query = """SELECT
-    books.id AS book_id,
-    title,
-    name,
-    publication_year,
-    grouped_tags.tags
-FROM books
-INNER JOIN authors ON authors.id = author_id
-INNER JOIN (
-    SELECT
-        book_id,
-        STRING_AGG(tag, ', ') AS tags
-    FROM book_tags
-    GROUP BY book_tags.book_id
-) AS grouped_tags
-ON grouped_tags.book_id = books.id
-WHERE title=%s
-;"""
 #     query = """SELECT
 #     books.id AS book_id,
 #     title,
@@ -222,6 +205,24 @@ WHERE title=%s
 # WHERE title=%s
 # ;"""
 
+    query = """SELECT
+        books.id AS book_id,
+        title,
+        name,
+        publication_year,
+        grouped_tags.tags
+    FROM books
+    INNER JOIN authors ON authors.id = author_id
+    INNER JOIN (
+        SELECT
+            book_id,
+            STRING_AGG(tag, ', ') AS tags
+        FROM book_tags
+        GROUP BY book_tags.book_id
+    ) AS grouped_tags
+    ON grouped_tags.book_id = books.id
+    WHERE title=%s
+    ;"""
 
     with get_connection(db_name) as conn:
         with conn.cursor() as cur:
@@ -1102,6 +1103,115 @@ def test_edit_book_canceling(db_name):
         assert bookypedia.edit_book(book_title, callback=bookypedia.empty_chooser, new_info=None) is None
 
         assert bookypedia.show_books() == books_to_str(get_books(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_concurrency_edit_book(db_name):
+    with run_bookypedia(db_name) as bookypedia_1:
+        bookypedia_1: Bookypedia
+
+        books = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+        for book in books:
+            bookypedia_1.add_book(random.randint(1, 2054), book, create_new_name(db_name), create_messy_tags(15))
+
+        book = random.choice(books)
+
+        with run_bookypedia(db_name, reset_db=False) as bookypedia_2:
+            bookypedia_2: Bookypedia
+
+            old_books_1 = bookypedia_1.show_books()
+            old_book_1 = bookypedia_1.show_book(book)
+
+            def check_books():
+                books_2 = bookypedia_2.show_books()
+                books_db = books_to_str(get_books(db_name))
+                print(books_db)
+                book_2 = bookypedia_2.show_book(book)
+                book_db = book_to_str(get_book(db_name, book)[0])
+                assert old_books_1 == books_2 == books_db
+                assert old_book_1 == book_2 == book_db
+
+            check_books()
+
+            mb_title = bookypedia_1._book('EditBook', book, callback=None)  # Enter new title
+            print(mb_title)
+
+            new_info = {
+                'title': 'Autobiography of Ted Mosby',
+                'year': '2030',
+                'tags': 'interesting, funny, over-detailed'
+
+            }
+
+            bookypedia_1.process.write(new_info['title'])
+            print('Got new title')
+            check_books()
+            # # year = self.process.read()  # Enter publication year
+            _ = bookypedia_1._wait_strings(0.1)
+            bookypedia_1.process.write(new_info['year'])
+            check_books()
+            # # tags = self.process.read()  # Enter tags
+            _ = bookypedia_1._wait_strings(0.1)
+            bookypedia_1.process.write(new_info['tags'])
+
+            new_books_1 = bookypedia_1.show_books()
+            new_book_1 = bookypedia_1.show_book(new_info['title'])
+            books_2 = bookypedia_2.show_books()
+            books_db = books_to_str(get_books(db_name))
+            book_2 = bookypedia_2.show_book(new_info['title'])
+            book_db = book_to_str(get_book(db_name, new_info['title'])[0])
+            assert new_books_1 == books_2 == books_db
+            assert new_book_1 == book_2 == book_db
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_concurrency_add_book(db_name):
+    with run_bookypedia(db_name) as bookypedia_1:
+        bookypedia_1: Bookypedia
+
+        with run_bookypedia(db_name, reset_db=False) as bookypedia_2:
+            bookypedia_2: Bookypedia
+
+
+            info = {
+                'title': 'Autobiography of Ted Mosby',
+                'author': 'Ted Mosby',
+                'year': '2030',
+                'tags': 'interesting, funny, over-detailed'
+
+            }
+
+            old_books_1 = bookypedia_1.show_books()
+
+            def check_books():
+                books_2 = bookypedia_2.show_books()
+                books_db = books_to_str(get_books(db_name))
+                print(books_db)
+                assert old_books_1 == books_2 == books_db
+                assert get_book(db_name, info['title']) == []
+                # assert bookypedia_2.show_book(info['title']).startswith('Book not found')
+            check_books()
+
+            bookypedia_1.process.write(f'AddBook {info["year"]} {info["title"]}')
+            _ = bookypedia_1._wait_strings(0.1)
+            bookypedia_1.process.write(info['author'])
+            _ = bookypedia_1._wait_strings(0.1)
+            bookypedia_1.process.write('y')
+            _ = bookypedia_1._wait_strings(0.1)
+            bookypedia_1.process.write(info['tags'])
+            _ = bookypedia_1._wait_strings(0.1)
+
+            new_books_1 = bookypedia_1.show_books()
+            books_2 = bookypedia_2.show_books()
+            books_db = books_to_str(get_books(db_name))
+            assert new_books_1 == books_2 == books_db
+
+            book_1 = bookypedia_1.show_book(info['title'])
+            book_2 = bookypedia_2.show_book(info['title'])
+            book_db = book_to_str(get_book(db_name, info['title'])[0])
+            assert book_1 == book_2 == book_db
 
 
 # @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
