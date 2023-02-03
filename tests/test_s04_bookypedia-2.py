@@ -36,7 +36,7 @@ random.seed(42)
 #       By Name      - Ok
 #       By Index     - Ok
 #       Canceling    - Failed to edit
-#       Non-existing - !
+#       Non-existing - Ok
 #   ShowBooks
 #       Ok
 #   ShowBook
@@ -44,20 +44,20 @@ random.seed(42)
 #       By index     - Ok
 #       Gl index     - Ok
 #       Canceling    - Ok
-#       Non-existing - !
-#   DeleteBook
+#       Non-existing - Shows empty line instead of 'Book not found'
+#   DeleteBooks
 #       By name      - Ok
 #       By index     - Ok
 #       Gl index     - Ok
 #       Canceling    - Ok
-#       Non-existing - !
+#       Non-existing - Shows empty line instead of 'Book not found'
 #   EditBook
 #       By name      - Ok
 #       By index     - Ok
 #       Gl index     - Ok
 #       Partial      - Not ok...
 #       Canceling    - Book not found
-#       Non-existing - !
+#       Non-existing - Ok
 #   Concurrency
 
 
@@ -326,7 +326,8 @@ class Bookypedia:
         request = self._author('EditAuthor', author_or_callback)  # Enter new name:
         if author_or_callback == self.empty_chooser:
             return request
-
+        if request.startswith('Failed'):
+            return request
         self.process.write(new_author)
         if self._wait_select():
             return self.process.read()
@@ -667,6 +668,26 @@ def test_edit_author_canceling(db_name):
 
 
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_edit_non_existing_author(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        # without books
+        extra_authors = [create_new_name(db_name) for _ in range(0, 3)]
+
+        for author in extra_authors:
+            assert bookypedia.add_author(author) is None
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+        new_name: str = create_new_name(db_name)
+        res = bookypedia.edit_author(new_name, new_name)
+        print(res)
+        assert res.startswith('Failed to edit author')
+
+        assert bookypedia.show_authors() == authors_to_str(get_authors(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_show_books(db_name):
     with run_bookypedia(db_name) as bookypedia:
         bookypedia: Bookypedia
@@ -753,6 +774,22 @@ def test_show_book_by_global_index(db_name):
             assert bookypedia_book == db_book
 
 
+@pytest.mark.skip
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_show_non_existing_book(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        books = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+
+        for title in books:
+            res = bookypedia.show_book(title)
+            print(res)
+            assert res[0].startswith('Book not found')
+
+
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_show_book_canceling(db_name):
     with run_bookypedia(db_name) as bookypedia:
@@ -825,6 +862,24 @@ def test_delete_book_by_global_index(db_name):
             bookypedia.delete_book(callback=bookypedia.index_chooser(0))
 
             assert bookypedia.show_books() == books_to_str(get_books(db_name))
+
+
+@pytest.mark.skip
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_delete_non_existing_book(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        book_titles = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+
+        for title in book_titles:
+            res = bookypedia.delete_book(title)
+            print(res)
+            assert res[0].startswith('Book not found')
+
+
 
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
 def test_delete_book_canceling(db_name):
@@ -1012,6 +1067,21 @@ def test_edit_book_empty_info(db_name, new_title, new_year, new_tags):
 
             assert new_bookypedia_book == new_db_book
             assert bookypedia.show_books() == books_to_str(get_books(db_name))
+
+
+@pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
+def test_edit_non_existing_book(db_name):
+    with run_bookypedia(db_name) as bookypedia:
+        bookypedia: Bookypedia
+
+        books = [
+            'How to cook an egg', 'Great man cannot do great things!', 'Strange ancient book!'
+        ]
+
+        for book in books:
+            assert bookypedia.edit_book(book=book, new_info=None).startswith('Book not found')
+
+        assert bookypedia.show_books() == books_to_str(get_books(db_name))
 
 
 @pytest.mark.parametrize('db_name', ['empty_db', 'table_db', 'full_db'])
