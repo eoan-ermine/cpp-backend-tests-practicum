@@ -1,19 +1,25 @@
 #!/bin/bash
 
-REPO=${PWD}
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/db_of_books/solution
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint4/db_of_books
+GET_IP=${SCRIPT_FOLDER}/../get_ip.py
 
-docker network rm test_docker_network
-export $DOCKER_NETWORK=$(docker network create -d bridge test-docker-network)
+bash $SCRIPT_FOLDER/build.sh
 
-docker run --rm --name --network $DOCKER_NETWORK postgres -e POSTGRES_HOST_AUTH_METHOD=trust -d postgres
+docker container stop postgres && docker container rm postgres
 
-export DELIVERY_APP=${REPO}/sprint4/problems/db_of_books/solution/build/book_manager
+POSTGRES_ID=$(docker run --name postgres -e POSTGRES_HOST_AUTH_METHOD=trust -d --rm postgres)
+
+sleep 5s # wait while postgres is setting up
+
 export POSTGRES_USER=postgres
 export POSTGRES_PASSWORD=Mys3Cr3t
-export POSTGRES_HOST=postgres
+export POSTGRES_HOST=$(python3 ${GET_IP} $POSTGRES_ID)
 export POSTGRES_PORT=5432
+export DELIVERY_APP=${SOLUTION_FOLDER}/build/book_manager
 
-pytest --junitxml=${GITHUB_WORKSPACE}/db_of_books.xml ${GITHUB_WORKSPACE}/cpp-backend-tests-practicum/tests/test_s04_db_of_books.py
+pytest --junitxml=${BASE_DIR}/db_of_books.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s04_db_of_books.py
 
-docker cotainer stop postgres
-docker network rm test_docker_network
+docker container stop postgres
+docker container stop postgres

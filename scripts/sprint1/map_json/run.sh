@@ -1,13 +1,15 @@
 #!/bin/bash
 
-REPO=${PWD}
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/map_json/solution
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint1/map_json
 
-source ${REPO}/.venv/bin/activate
+bash ${SCRIPT_FOLDER}/build.sh
 
-export DELIVERY_APP=${REPO}/sprint1/problems/map_json/solution/build/bin/game_server
+source ${BASE_DIR}/.venv/bin/activate
 
-export CONFIG_PATH=${REPO}/sprint1/problems/map_json/solution/data/config.json
-
+export DELIVERY_APP=${SOLUTION_FOLDER}/build/bin/game_server
+export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 export COMMAND_RUN="${DELIVERY_APP} ${CONFIG_PATH}"
 
-python3 -m pytest --rootdir=${REPO} --verbose --junitxml=results.xml cpp-backend-tests-practicum/tests/test_l04_map_json.py
+python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=results.xml cpp-backend-tests-practicum/tests/test_l04_map_json.py

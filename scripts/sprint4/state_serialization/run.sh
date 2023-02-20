@@ -1,9 +1,15 @@
 #!/bin/bash
 
-REPO=${PWD}
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/state_serialization/solution
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint4/state_serialization
+VOLUME_DIR=${BASE_DIR}/sprint4/problems/state_serialization/volume
 
-export CONFIG_PATH=${REPO}/sprint4/problems/state_serialization/solution/data/config.json
-export VOLUME_PATH=${REPO}/sprint4/problems/state_serialization/volume
-export IMAGE_NAME='state_serialization'
+bash ${SCRIPT_FOLDER}/build.sh
 
-pytest --junitxml=${REPO}/state_serialization.xml cpp-backend-tests-practicum/tests/test_s04_state_serialization.py
+export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
+
+export VOLUME_PATH=${VOLUME_DIR}
+export IMAGE_NAME=state_serialization
+
+pytest --junitxml=${BASE_DIR}/state_serialization.xml cpp-backend-tests-practicum/tests/test_s04_state_serialization.py

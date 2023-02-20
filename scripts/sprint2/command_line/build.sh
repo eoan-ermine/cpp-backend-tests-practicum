@@ -1,4 +1,6 @@
 #!/bin/bash
 
-cd sprint2/problems/command_line/solution || exit 1
-docker build -t command_line .
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/command_line/solution
+
+docker build -t command_line ${SOLUTION_FOLDER}

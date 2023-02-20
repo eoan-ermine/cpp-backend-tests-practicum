@@ -1,5 +1,8 @@
 #!/bin/bash
 
-cp cpp-backend-tests-practicum/tests/cpp/test_s03_gather/* sprint3/problems/gather/solution/tests/
-cd sprint3/problems/gather/solution || exit 1
-docker build -t gather .
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/gather/solution
+CPP_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/tests/cpp/test_s03_gather
+
+cp -r ${CPP_FOLDER}/* ${SOLUTION_FOLDER}/src/
+docker build -t gather . ${SOLUTION_FOLDER}

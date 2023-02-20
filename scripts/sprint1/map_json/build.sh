@@ -1,6 +1,9 @@
 #!/bin/bash
 
-cd sprint1/problems/map_json/solution || exit 1
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/map_json/solution
+
+cd ${SOLUTION_FOLDER} || exit 1
 mkdir -p build
 cd build
 conan install ..

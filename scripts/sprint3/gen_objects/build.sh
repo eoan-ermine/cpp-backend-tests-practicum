@@ -1,4 +1,6 @@
 #!/bin/bash
 
-cd sprint3/problems/gen_objects/solution || exit 1
-docker build -t gen_objects .
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/gen_objects/solution
+
+docker build -t gen_objects ${SOLUTION_FOLDER}

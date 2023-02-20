@@ -1,4 +1,6 @@
 #!/bin/bash
 
-cd sprint2/problems/server_logging/solution || exit 1
-docker build -t server_logging .
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/server_logging/solution
+
+docker build -t server_logging ${SOLUTION_FOLDER}

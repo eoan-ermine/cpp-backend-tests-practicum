@@ -1,8 +1,10 @@
 #!/bin/bash
 
-REPO=${PWD}
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/state_serialization/solution
+VOLUME_DIR=${SOLUTION_FOLDER}/../volume
 
-cd sprint4/problems/state_serialization/solution || exit 1
-docker build -t state_serialization .
-mkdir ${REPO}/sprint4/problems/state_serialization/volume
-chmod 777 ${REPO}/sprint4/problems/state_serialization/volume
+docker build -t state_serialization ${SOLUTION_FOLDER}
+
+mkdir -p ${VOLUME_DIR}
+chmod 777 ${VOLUME_DIR}

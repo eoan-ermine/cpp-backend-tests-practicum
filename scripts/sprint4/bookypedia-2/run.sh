@@ -1,27 +1,25 @@
 #!/bin/bash
 
-
-REPO=${PWD}
-SCRIPT_FOLDER=${REPO}//cpp-backend-tests-practicum/scripts/sprint4/bookypedia-2
-NETWORK_NAME=docker_network
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/bookypedia-2/solution
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint4/bookypedia-2
+GET_IP=${SCRIPT_FOLDER}/../get_ip.py
 
 bash $SCRIPT_FOLDER/build.sh
 
-echo $SCRIPT_FOLDER
-docker network rm $NETWORK_NAME
+docker container stop postgres && docker container rm postgres
 
-DOCKER_NETWORK=$(docker network create $NETWORK_NAME)
-
-docker container stop postgres
-docker container rm postgres
-docker run --rm --name postgres --network $NETWORK_NAME -e POSTGRES_HOST_AUTH_METHOD=trust -d postgres
+POSTGRES_ID=$(docker run --name postgres -e POSTGRES_HOST_AUTH_METHOD=trust -d --rm postgres)
 
 sleep 5s # wait while postgres is setting up
 
-docker run --rm --name bookypedia-2 --network $NETWORK_NAME --env-file ${SCRIPT_FOLDER}/.env bookypedia-2
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=Mys3Cr3t
+export POSTGRES_HOST=$(python3 ${GET_IP} $POSTGRES_ID)
+export POSTGRES_PORT=5432
+
+export DELIVERY_APP=${SOLUTION_FOLDER}/build/bookypedia
+
+pytest --junitxml=${BASE_DIR}/bookypedia-2.xml cpp-backend-tests-practicum/tests/test_s04_bookypedia-2.py
 
 docker container stop postgres
-docker network rm $NETWORK_NAME
-
-rm ${SCRIPT_FOLDER}/bookypedia
-rm ${SCRIPT_FOLDER}/test_s04_bookypedia-2.py

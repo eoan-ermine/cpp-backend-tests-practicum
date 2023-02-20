@@ -1,9 +1,12 @@
 #!/bin/bash
 
-REPO=${PWD}
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/sync_server/solution
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint1/sync_server
 
-source ${REPO}/.venv/bin/activate
+bash ${SCRIPT_FOLDER}/build.sh
 
-export COMMAND_RUN=${REPO}/sprint1/problems/sync_server/solution/build/bin/hello
+source ${BASE_DIR}/.venv/bin/activate
+export COMMAND_RUN=${SOLUTION_FOLDER}/build/bin/hello
 
-python3 -m pytest --rootdir=${REPO} --verbose --junitxml=results.xml cpp-backend-tests-practicum/tests/test_l02_hello_beast.py
+python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=results.xml cpp-backend-tests-practicum/tests/test_l02_hello_beast.py

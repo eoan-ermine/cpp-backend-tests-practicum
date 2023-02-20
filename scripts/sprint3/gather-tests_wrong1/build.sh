@@ -1,8 +1,12 @@
 #!/bin/bash
 
-cp -r cpp-backend-tests-practicum/tests/cpp/test_s03_gather-tests/* sprint3/problems/gather-tests/solution/src/
-cp cpp-backend-tests-practicum/tests/cpp/test_s03_gather-tests/wrong/collision_detector.cpp sprint3/problems/gather-tests/solution/src/
-cp cpp-backend-tests-practicum/tests/cpp/test_s03_gather-tests/wrong/CMakeLists.txt sprint3/problems/gather-tests/solution/
-cp cpp-backend-tests-practicum/tests/cpp/test_s03_gather-tests/wrong/Dockerfile1 sprint3/problems/gather-tests/solution/Dockerfile
-cd sprint3/problems/gather-tests/solution || exit 1
-docker build -t gather-tests_wrong1 .
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/gather-tests/solution
+CPP_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/tests/cpp/test_s03_gather-tests
+
+cp -r ${CPP_FOLDER}/* ${SOLUTION_FOLDER}/src/
+cp ${CPP_FOLDER}/wrong/collision_detector.cpp ${SOLUTION_FOLDER}/src/
+cp ${CPP_FOLDER}/wrong/CMakeLists.txt ${SOLUTION_FOLDER}/
+cp ${CPP_FOLDER}/wrong/Dockerfile1 ${SOLUTION_FOLDER}/Dockerfile
+
+docker build -t gather-tests_wrong1 ${SOLUTION_FOLDER}

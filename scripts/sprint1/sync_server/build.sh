@@ -1,6 +1,9 @@
 #!/bin/bash
 
-cd sprint1/problems/sync_server/solution || exit 1
+BASE_DIR=${PWD}
+SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/sync_server/solution
+
+cd ${SOLUTION_FOLDER} || exit 1
 mkdir -p build
 cd build
 conan install ..
