@@ -1,8 +1,8 @@
 #!/bin/bash
 
 BASE_DIR=${PWD}
-SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/bookypedia-2/solution
 SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint4/bookypedia-2
+SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/bookypedia-2/solution
 GET_IP=${SCRIPT_FOLDER}/../get_ip.py
 
 bash $SCRIPT_FOLDER/build.sh

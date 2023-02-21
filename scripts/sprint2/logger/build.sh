@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BASE_DIR=${PWD}
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint2/logger
 SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/logger/solution
 
 cd ${SOLUTION_FOLDER} || exit 1

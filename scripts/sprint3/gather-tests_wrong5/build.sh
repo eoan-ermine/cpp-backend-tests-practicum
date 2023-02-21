@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BASE_DIR=${PWD}
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint3/gather-tests_wrong5
 SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/gather-tests/solution
 CPP_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/tests/cpp/test_s03_gather-tests
 

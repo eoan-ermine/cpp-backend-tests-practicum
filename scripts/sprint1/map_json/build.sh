@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BASE_DIR=${PWD}
+SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint1/map_json
 SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/map_json/solution
 
 cd ${SOLUTION_FOLDER} || exit 1

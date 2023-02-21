@@ -1,8 +1,8 @@
 #!/bin/bash
 
 BASE_DIR=${PWD}
-SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/bookypedia-1/solution
 SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint4/bookypedia-1
+SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/bookypedia-1/solution
 
 cd ${SOLUTION_FOLDER} || exit 1
 mkdir build

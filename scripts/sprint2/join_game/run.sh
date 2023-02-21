@@ -1,8 +1,8 @@
 #!/bin/bash
 
 BASE_DIR=${PWD}
-SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/join_game/solution/
 SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint2/join_game
+SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/join_game/solution/
 
 bash ${SCRIPT_FOLDER}/build.sh
 
