@@ -1,7 +1,13 @@
 #!/bin/bash
 
-BASE_DIR=${PWD}
-SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint2/static_content
+function real_dir() {
+  pushd "$1" >/dev/null
+  pwd -P
+  popd >/dev/null
+}
+SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
+
+BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/static_content/solution
 
 bash ${SCRIPT_FOLDER}/build.sh
@@ -13,4 +19,4 @@ export DATA_PATH=${SOLUTION_FOLDER}/static/
 
 export COMMAND_RUN="${DELIVERY_APP} ${CONFIG_PATH} ${DATA_PATH}"
 
-python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=results.xml cpp-backend-tests-practicum/tests/test_s02_static_content.py
+python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=${BASE_DIR}/static_content.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s02_static_content.py

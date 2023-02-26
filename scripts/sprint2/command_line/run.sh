@@ -1,7 +1,13 @@
 #!/bin/bash
 
-BASE_DIR=${PWD}
-SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint2/command_line
+function real_dir() {
+  pushd "$1" >/dev/null
+  pwd -P
+  popd >/dev/null
+}
+SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
+
+BASE_DIR=${SCRIPT_FOLDER}/../../../..
 SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/command_line/solution
 
 bash ${SCRIPT_FOLDER}/build.sh
@@ -11,4 +17,4 @@ export IMAGE_NAME=command_line
 export ENTRYPOINT=/app/game_server
 export CONTAINER_ARGS='--config-file /app/data/config.json --www-root /app/static/'
 
-pytest --workers auto --junitxml=${BASE_DIR}/command_line.xml cpp-backend-tests-practicum/tests/test_s02_command_line.py
+pytest --workers auto --junitxml=${BASE_DIR}/command_line.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s02_command_line.py

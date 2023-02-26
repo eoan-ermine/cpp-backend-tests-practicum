@@ -1,7 +1,13 @@
 #!/bin/bash
 
-BASE_DIR=${PWD}
-SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint4/bookypedia-1
+function real_dir() {
+  pushd "$1" >/dev/null
+  pwd -P
+  popd >/dev/null
+}
+SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
+
+BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/bookypedia-1/solution
 
 cd ${SOLUTION_FOLDER} || exit 1

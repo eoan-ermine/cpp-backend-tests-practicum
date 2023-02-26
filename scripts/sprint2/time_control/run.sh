@@ -1,7 +1,13 @@
 #!/bin/bash
 
-BASE_DIR=${PWD}
-SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint2/time_control
+function real_dir() {
+  pushd "$1" >/dev/null
+  pwd -P
+  popd >/dev/null
+}
+SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
+
+BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/time_control/solution
 
 bash ${SCRIPT_FOLDER}/build.sh
@@ -9,4 +15,4 @@ bash ${SCRIPT_FOLDER}/build.sh
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 export IMAGE_NAME=time_control
 
-pytest --workers auto --junitxml=${BASE_DIR}/time_control.xml cpp-backend-tests-practicum/tests/test_s02_time_control.py
+pytest --workers auto --junitxml=${BASE_DIR}/time_control.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s02_time_control.py

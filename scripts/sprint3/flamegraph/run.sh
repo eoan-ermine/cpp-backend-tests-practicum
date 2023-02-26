@@ -1,8 +1,14 @@
 #!/bin/bash
 
-BASE_DIR=${PWD}
+function real_dir() {
+  pushd "$1" >/dev/null
+  pwd -P
+  popd >/dev/null
+}
+SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
+
+BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/flamegraph/solution
-SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint3/flamegraph
 
 MAP_JSON_FOLDER=${BASE_DIR}/sprint1/problems/map_json/solution
 MAP_JSON_CONFIG=${MAP_JSON_FOLDER}/data/config.json

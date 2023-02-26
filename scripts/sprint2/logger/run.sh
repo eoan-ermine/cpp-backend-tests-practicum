@@ -1,11 +1,16 @@
 #!/bin/bash
 
-BASE_DIR=${PWD}
-SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint2/logger
+function real_dir() {
+  pushd "$1" >/dev/null
+  pwd -P
+  popd >/dev/null
+}
+SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
+
+BASE_DIR=${SCRIPT_FOLDER}/../../../..
 SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/logger/solution
 
 bash ${SCRIPT_FOLDER}/build.sh
 
-source ${REPO}/.venv/bin/activate
-
+cd ${BASE_DIR}
 ${SOLUTION_FOLDER}/build/bin/hello_log
