@@ -13,4 +13,4 @@ SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/logger/solution
 bash ${SCRIPT_FOLDER}/build.sh
 
 cd ${BASE_DIR}
-sudo ${SOLUTION_FOLDER}/build/bin/hello_log
+${SOLUTION_FOLDER}/build/bin/hello_log
