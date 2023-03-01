@@ -168,7 +168,7 @@ class CppServer:
             self.container.rename(name[:-1])
             self.container.rename(name)     # Присваиваем изначальное имя, чтобы иметь доступ по нему
 
-            if server_domain != '127.0.0.1':
+            if docker_network:
                 # Если работаем в сети докера - обращаемся по имени
                 server_domain = inspector.inspect_container(self.container.id)['Name'][1:]
             else:
