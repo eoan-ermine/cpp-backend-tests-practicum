@@ -11,7 +11,7 @@ BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/leave_game/solution
 GET_IP=${SCRIPT_FOLDER}/../get_ip.py
 
-bash ${SCRIPT_FOLDER}/build.sh
+bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
 docker container stop postgres && docker container rm postgres
 

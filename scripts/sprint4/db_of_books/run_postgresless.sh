@@ -11,7 +11,7 @@ BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/db_of_books/solution
 GET_IP=${SCRIPT_FOLDER}/../get_ip.py
 
-bash $SCRIPT_FOLDER/build.sh
+bash $SCRIPT_FOLDER/build.sh || exit 1
 
 export POSTGRES_USER=postgres
 export POSTGRES_PASSWORD=Mys3Cr3t

@@ -11,7 +11,7 @@ BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/state_serialization/solution
 VOLUME_DIR=${BASE_DIR}/sprint4/problems/state_serialization/volume
 
-bash ${SCRIPT_FOLDER}/build.sh
+bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 

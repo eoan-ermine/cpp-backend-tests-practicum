@@ -10,7 +10,7 @@ SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
 BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/instrumentation/solution
 
-bash ${SCRIPT_FOLDER}/build.sh
+bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
 export REPORT_PATH=${SOLUTION_FOLDER}/report
 export BINARY_PATH=${SOLUTION_FOLDER}/event2dot

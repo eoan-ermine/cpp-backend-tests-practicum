@@ -10,7 +10,7 @@ SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
 BASE_DIR=${SCRIPT_FOLDER}/../../../..
 SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/final_task/solution
 
-bash ${SCRIPT_FOLDER}/build.sh
+bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
 export IMAGE_NAME=final_task
 python3 -m pytest --workers=auto --rootdir=${BASE_DIR} --verbose --junitxml=${BASE_DIR}/final_task.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_l05_final_task.py

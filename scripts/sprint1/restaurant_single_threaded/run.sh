@@ -10,6 +10,6 @@ SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
 BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/restaurant_single_threaded/solution
 
-bash ${SCRIPT_FOLDER}/build.sh
+bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
 ${SOLUTION_FOLDER}/build/bin/restaurant

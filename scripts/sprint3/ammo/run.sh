@@ -10,7 +10,7 @@ SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
 BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/ammo/solution
 
-bash ${SCRIPT_FOLDER}/build.sh
+bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
 NETWORK_NAME=ammo_network
 docker network rm ${NETWORK_NAME}

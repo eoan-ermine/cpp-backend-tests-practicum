@@ -11,7 +11,7 @@ SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
 BASE_DIR=${SCRIPT_FOLDER}/../../../..
 SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/async_server/solution
 
-bash ${SCRIPT_FOLDER}/build.sh
+bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
 export COMMAND_RUN=${SOLUTION_FOLDER}/build/bin/hello_async
 
