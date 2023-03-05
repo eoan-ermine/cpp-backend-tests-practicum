@@ -22,9 +22,7 @@ export DIRECTORY=${SOLUTION_FOLDER}
 
 sudo python3 shoot.py "${MAP_JSON_PROGRAM} ${MAP_JSON_CONFIG}"
 
-sudo chown -R $USER:$USER ${SOLUTION_FOLDER}
-sudo chown -R runner:docker ${SOLUTION_FOLDER}
+sudo chown -R $USER:$USER ${SOLUTION_FOLDER}/*
+#sudo chown -R runner:docker ${SOLUTION_FOLDER}/*
 ls -l
 pytest --junitxml=${BASE_DIR}/flamegraph.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s03_flamegraph.py
-
-chmod +x ${MAP_JSON_PROGRAM}
