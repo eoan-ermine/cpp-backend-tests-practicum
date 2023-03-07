@@ -16,7 +16,10 @@ MAP_JSON_PROGRAM=${MAP_JSON_FOLDER}/build/bin/game_server
 
 source ${BASE_DIR}/.venv/bin/activate
 
-./${SCRIPT_FOLDER}/../../sprint1/map_json/build.sh || exit 1
+cd ${SCRIPT_FOLDER}/../..
+pwd
+ls sprint1/map_json/build.sh
+./sprint1/map_json/build.sh || exit 1
 
 
 cd ${SOLUTION_FOLDER} || exit 1
