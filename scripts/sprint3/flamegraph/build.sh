@@ -18,7 +18,11 @@ source ${BASE_DIR}/.venv/bin/activate
 
 cd ${SOLUTION_FOLDER} || exit 1
 
+
 FOLDER=FlameGraph
+
+rm -r ${SOLUTION_FOLDER}/${FOLDER}
+
 if [ ! -d "${FOLDER}" ] ; then
   git clone https://github.com/brendangregg/FlameGraph
 else
