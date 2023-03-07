@@ -29,6 +29,6 @@ export POSTGRES_PORT=5432
 export IMAGE_NAME=leave_game
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 
-pytest --workers 4 --junitxml=${BASE_DIR}/leave_game.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s04_leave_game.py
+pytest --workers auto --junitxml=${BASE_DIR}/leave_game.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s04_leave_game.py
 
 docker container stop postgres
