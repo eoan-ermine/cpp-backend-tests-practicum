@@ -13,6 +13,8 @@ SCRIPT_FOLDER=${BASE_DIR}/cpp-backend-tests-practicum/scripts/sprint3/gen_object
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 export IMAGE_NAME=gen_objects
 export ENTRYPOINT=/app/game_server

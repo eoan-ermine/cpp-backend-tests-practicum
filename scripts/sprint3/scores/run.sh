@@ -12,6 +12,8 @@ SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/scores/solution
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 export IMAGE_NAME=scores
 export ENTRYPOINT=/app/game_server

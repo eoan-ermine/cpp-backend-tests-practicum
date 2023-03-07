@@ -13,6 +13,8 @@ GET_IP=${SCRIPT_FOLDER}/../get_ip.py
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 docker container stop postgres && docker container rm postgres
 
 POSTGRES_ID=$(docker run --name postgres -e POSTGRES_HOST_AUTH_METHOD=trust -d --rm postgres)

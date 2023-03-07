@@ -16,6 +16,8 @@ MAP_JSON_PROGRAM=${MAP_JSON_FOLDER}/build/bin/game_server
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 cd ${SOLUTION_FOLDER} || exit 1
 
 export DIRECTORY=${SOLUTION_FOLDER}

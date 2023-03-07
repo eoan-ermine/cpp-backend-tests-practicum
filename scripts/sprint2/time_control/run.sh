@@ -12,6 +12,8 @@ SOLUTION_FOLDER=${BASE_DIR}/sprint2/problems/time_control/solution
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 export IMAGE_NAME=time_control
 

@@ -14,6 +14,8 @@ MAP_JSON_FOLDER=${BASE_DIR}/sprint1/problems/map_json/solution
 MAP_JSON_CONFIG=${MAP_JSON_FOLDER}/data/config.json
 MAP_JSON_PROGRAM=${MAP_JSON_FOLDER}/build/bin/game_server
 
+source ${BASE_DIR}/.venv/bin/activate
+
 cd ${SOLUTION_FOLDER} || exit 1
 
 FOLDER=FlameGraph

@@ -12,6 +12,8 @@ SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/instrumentation/solution
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 export REPORT_PATH=${SOLUTION_FOLDER}/report
 export BINARY_PATH=${SOLUTION_FOLDER}/event2dot
 export ARG=${SOLUTION_FOLDER}/inputs

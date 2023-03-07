@@ -12,6 +12,8 @@ SOLUTION_FOLDER=${BASE_DIR}/sprint3/problems/load/solution
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 NETWORK_NAME=ammo_network
 docker network rm ${NETWORK_NAME}
 NETWORK_ID=$(docker network create ${NETWORK_NAME})

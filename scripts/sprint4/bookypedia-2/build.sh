@@ -10,6 +10,8 @@ SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
 BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint4/problems/bookypedia-2/solution
 
+source ${BASE_DIR}/.venv/bin/activate
+
 
 cd ${SOLUTION_FOLDER} || exit 1
 mkdir build

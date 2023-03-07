@@ -10,6 +10,8 @@ SCRIPT_FOLDER=$(real_dir "$(dirname "$0")")
 BASE_DIR=${SCRIPT_FOLDER}/../../../../
 SOLUTION_FOLDER=${BASE_DIR}/sprint1/problems/async_server/solution
 
+source ${BASE_DIR}/.venv/bin/activate
+
 cd ${SOLUTION_FOLDER} || exit 1
 mkdir -p build
 cd build

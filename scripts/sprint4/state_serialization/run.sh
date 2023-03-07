@@ -13,6 +13,8 @@ VOLUME_DIR=${BASE_DIR}/sprint4/problems/state_serialization/volume
 
 bash ${SCRIPT_FOLDER}/build.sh || exit 1
 
+source ${BASE_DIR}/.venv/bin/activate
+
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 
 export VOLUME_PATH=${VOLUME_DIR}
