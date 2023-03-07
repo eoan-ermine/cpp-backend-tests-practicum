@@ -18,4 +18,4 @@ export DELIVERY_APP=${SOLUTION_FOLDER}/build/bin/game_server
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 export COMMAND_RUN="${DELIVERY_APP} ${CONFIG_PATH}"
 
-python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=${BASE_DIR}/results.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_l04_map_json.py
+python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=${BASE_DIR}/map_json.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_l04_map_json.py

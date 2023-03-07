@@ -15,4 +15,4 @@ bash ${SCRIPT_FOLDER}/build.sh || exit 1
 source ${BASE_DIR}/.venv/bin/activate
 export COMMAND_RUN=${SOLUTION_FOLDER}/build/bin/hello
 
-python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=${BASE_DIR}/results.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_l02_hello_beast.py
+python3 -m pytest --rootdir=${BASE_DIR} --verbose --junitxml=${BASE_DIR}/sync_server.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_l02_hello_beast.py
