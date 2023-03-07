@@ -16,12 +16,18 @@ MAP_JSON_PROGRAM=${MAP_JSON_FOLDER}/build/bin/game_server
 
 source ${BASE_DIR}/.venv/bin/activate
 
+cd ${SCRIPT_FOLDER}/../..
+
+../sprint1/map_json/build.sh || exit 1
+
+
 cd ${SOLUTION_FOLDER} || exit 1
 
 
 FOLDER=FlameGraph
 
-rm -r ${SOLUTION_FOLDER}/${FOLDER}
+#rm -r ${SOLUTION_FOLDER}/${FOLDER}
+
 
 if [ ! -d "${FOLDER}" ] ; then
   git clone https://github.com/brendangregg/FlameGraph
