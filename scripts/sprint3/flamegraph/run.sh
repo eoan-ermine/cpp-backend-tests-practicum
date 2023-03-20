@@ -22,7 +22,7 @@ cd ${SOLUTION_FOLDER} || exit 1
 
 export DIRECTORY=${SOLUTION_FOLDER}
 
-sudo python3 shoot.py "${MAP_JSON_PROGRAM} ${MAP_JSON_CONFIG}"
+sudo python3 shoot.py "${MAP_JSON_PROGRAM} ${MAP_JSON_CONFIG}" || exit 1
 
 sudo chown -R $USER:$USER ${SOLUTION_FOLDER}
 
