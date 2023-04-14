@@ -1,5 +1,6 @@
 import os
 import json
+import jsonschema
 import pathlib
 
 import pytest
@@ -14,6 +15,7 @@ from cpp_server_api import CppServer as Server
 from cpp_server_api import ServerException
 
 START_PATTERN = '[Ss]erver (has )?started'
+JSON_SCHEMA_PATH = 'schemas/config_schema.json'
 
 
 def get_maps_from_config_file(config: Path):
@@ -22,6 +24,7 @@ def get_maps_from_config_file(config: Path):
 
 def pytest_generate_tests(metafunc):
     config_path = os.environ.get('CONFIG_PATH')
+
     if 'map_dict' in metafunc.fixturenames:
         if config_path:
             config_path = Path(config_path)
@@ -35,9 +38,11 @@ def pytest_generate_tests(metafunc):
     if 'config' in metafunc.fixturenames:
         if config_path:
             config_path = Path(config_path)
+            with open(config_path, 'r') as f:
+                config = json.load(f)
             metafunc.parametrize(
                 'config',
-                json.loads(config_path.read_text())
+                config
             )
     if 'map_id' in metafunc.fixturenames:
         if config_path:
@@ -62,6 +67,14 @@ def _make_server(xprocess):
     commands = os.environ['COMMAND_RUN'].split()
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     server_port = os.environ.get('SERVER_PORT', '8080')
+    config_path = os.environ.get('CONFIG_PATH')
+
+    if config_path is not None:
+        with open(JSON_SCHEMA_PATH) as f:
+            schema = json.load(f)
+        with open(config_path) as f:
+            config = json.load(f)
+        jsonschema.validate(config, schema)
 
     class Starter(ProcessStarter):
         pattern = START_PATTERN
@@ -85,6 +98,14 @@ def docker_server():
     server_domain = os.environ.get('SERVER_DOMAIN', '127.0.0.1')
     image_name = os.environ['IMAGE_NAME']
     port = os.environ.get('SERVER_PORT', '8080')
+    config_path = os.environ.get('CONFIG_PATH')
+
+    if config_path is not None:
+        with open(JSON_SCHEMA_PATH) as f:
+            schema = json.load(f)
+        with open(config_path) as f:
+            config = json.load(f)
+        jsonschema.validate(config, schema)
 
     extra_kwargs = {}
 
