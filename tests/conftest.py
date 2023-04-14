@@ -15,7 +15,8 @@ from cpp_server_api import CppServer as Server
 from cpp_server_api import ServerException
 
 START_PATTERN = '[Ss]erver (has )?started'
-JSON_SCHEMA_PATH = 'schemas/config_schema.json'
+
+JSON_SCHEMA_PATH = os.environ.get("CONFIG_SCHEMA_PATH", 'schemas/config_schema.json')
 
 
 def get_maps_from_config_file(config: Path):
