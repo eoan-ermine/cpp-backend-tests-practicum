@@ -15,6 +15,5 @@ source ${BASE_DIR}/.venv/bin/activate
 cd ${SOLUTION_FOLDER} || exit 1
 mkdir -p build
 cd build
-conan install ..
 cmake ..
 cmake --build . -j $(nproc)
