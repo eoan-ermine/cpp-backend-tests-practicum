@@ -18,7 +18,7 @@ A=$((1 + $RANDOM % 10))
 B=$((1 + $RANDOM % 10))
 C=$(($A + $B))
 
-answer=$(echo ${A} ${B} | ${SOLUTIONS_FOLDER}/build/sum)
+answer=$(echo ${A} ${B} | ${SOLUTION_FOLDER}/build/sum)
 
 
 
