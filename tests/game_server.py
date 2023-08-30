@@ -146,7 +146,7 @@ class RoadLoader:
             self.y1 = max(y0, y1)
             self.is_vertical = x0 == x1
 
-        def make_dict(self):
+        def make_dict(self) -> dict:
             return {
                 'x0': self.x0,
                 'x1': self.x1,
@@ -161,6 +161,10 @@ class RoadLoader:
         is_vertical: bool
 
     def __init__(self, raw_roads: dict):
+        self.vertical_roads: List[RoadLoader.RawRoad] = []
+        self.horizontal_roads: List[RoadLoader.RawRoad] = []
+        self.new_roads: List[RoadLoader.RawRoad] = []
+
         for raw_road in raw_roads:
             road = self.RawRoad(raw_road)
             if road.is_vertical:
@@ -170,7 +174,7 @@ class RoadLoader:
         self.handle_the_roads()
 
     def handle_the_roads(self):
-        def check_roads(roads: List):
+        def check_roads(roads: List) -> Optional[List[List[RoadLoader.RawRoad]]]:
             for_merging = list()
             for i in range(len(roads)):
                 road_1 = roads[i]
@@ -189,20 +193,13 @@ class RoadLoader:
 
             return for_merging
 
-        def merge_roads(road_1: RoadLoader.RawRoad, road_2: RoadLoader.RawRoad):
+        def merge_roads(road_1: RoadLoader.RawRoad, road_2: RoadLoader.RawRoad) -> RoadLoader.RawRoad:
             result = RoadLoader.RawRoad()
-            if road_1.is_vertical:
-                result.x0 = road_1.x0
-                result.x1 = road_1.x1
-                result.y0 = min(road_1.y0, road_2.y0)
-                result.y1 = max(road_1.y1, road_2.y1)
-                result.is_vertical = True
-            else:
-                result.x0 = min(road_1.x0, road_2.x0)
-                result.x1 = max(road_1.x1, road_2.x1)
-                result.y0 = road_1.y0
-                result.y1 = road_1.y1
-                result.is_vertical = False
+            result.x0 = min(road_1.x0, road_2.x0)
+            result.x1 = max(road_1.x1, road_2.x1)
+            result.y0 = min(road_1.y0, road_2.y0)
+            result.y1 = max(road_1.y1, road_2.y1)
+            result.is_vertical = road_1.is_vertical
 
             return result
 
@@ -218,17 +215,13 @@ class RoadLoader:
             self.horizontal_roads.remove(pair[0])
             self.horizontal_roads.remove(pair[1])
 
-    def get_dicts(self):
+    def get_dicts(self) -> List[dict]:
 
         result = list()
         src = self.vertical_roads + self.horizontal_roads + self.new_roads
         for road in src:
             result.append(road.make_dict())
         return result
-
-    vertical_roads: List[RawRoad] = list()
-    horizontal_roads: List[RawRoad] = list()
-    new_roads: List[RawRoad] = list()
 
 
 class GameSession:
