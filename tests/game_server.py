@@ -161,8 +161,14 @@ class RoadLoader:
         is_vertical: bool
 
     def __init__(self, raw_roads: dict):
+        RawRoad = RoadLoader.RawRoad
+
+        self.vertical_roads: List[RawRoad] = []
+        self.horizontal_roads: List[RawRoad] = []
+        self.new_roads: List[RawRoad] = []
+
         for raw_road in raw_roads:
-            road = self.RawRoad(raw_road)
+            road = RawRoad(raw_road)
             if road.is_vertical:
                 self.vertical_roads.append(road)
             else:
@@ -170,13 +176,14 @@ class RoadLoader:
         self.handle_the_roads()
 
     def handle_the_roads(self):
-        def check_roads(roads: List):
+        RawRoad = RoadLoader.RawRoad
+        RoadPairs = Optional[List[List[RawRoad]]]
+
+        def check_roads(roads: List[RawRoad]) -> RoadPairs:
             for_merging = list()
             for i in range(len(roads)):
                 road_1 = roads[i]
                 for road_2 in roads[i+1:]:
-                    road_1: RoadLoader.RawRoad
-                    road_2: RoadLoader.RawRoad
                     # Проверяем совпадение концов коллинеарных дорог
                     if road_1.is_vertical:
                         if road_1.x0 == road_2.x0:
@@ -189,20 +196,13 @@ class RoadLoader:
 
             return for_merging
 
-        def merge_roads(road_1: RoadLoader.RawRoad, road_2: RoadLoader.RawRoad):
-            result = RoadLoader.RawRoad()
-            if road_1.is_vertical:
-                result.x0 = road_1.x0
-                result.x1 = road_1.x1
-                result.y0 = min(road_1.y0, road_2.y0)
-                result.y1 = max(road_1.y1, road_2.y1)
-                result.is_vertical = True
-            else:
-                result.x0 = min(road_1.x0, road_2.x0)
-                result.x1 = max(road_1.x1, road_2.x1)
-                result.y0 = road_1.y0
-                result.y1 = road_1.y1
-                result.is_vertical = False
+        def merge_roads(road_1: RawRoad, road_2: RawRoad) -> RawRoad:
+            result = RawRoad()
+            result.x0 = min(road_1.x0, road_2.x0)
+            result.x1 = max(road_1.x1, road_2.x1)
+            result.y0 = min(road_1.y0, road_2.y0)
+            result.y1 = max(road_1.y1, road_2.y1)
+            result.is_vertical = road_1.is_vertical
 
             return result
 
@@ -236,7 +236,7 @@ class GameSession:
     def __init__(self, game_map: dict, default_speed):
         self.map = game_map
         self.roads: List[Road] = list()
-        prepared_roads = RoadLoader(game_map['roads']).get_dicts()
+        prepared_roads: List[dict] = RoadLoader(game_map['roads']).get_dicts()
         for r in prepared_roads:
             road = Road(r)
             self.roads.append(road)
