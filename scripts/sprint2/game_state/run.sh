@@ -16,5 +16,7 @@ source ${BASE_DIR}/.venv/bin/activate
 
 export CONFIG_PATH=${SOLUTION_FOLDER}/data/config.json
 export IMAGE_NAME=game_state
+export ENTRYPOINT=/app/game_server
+export CONTAINER_ARGS='--config-file /app/data/config.json --www-root /app/static/'
 
 pytest --workers auto --junitxml=${BASE_DIR}/game_state.xml ${BASE_DIR}/cpp-backend-tests-practicum/tests/test_s02_game_state.py
